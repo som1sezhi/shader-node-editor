@@ -1,4 +1,4 @@
-import { Background, Edge, NodeTypes, OnReconnect, ReactFlow } from "@xyflow/react";
+import { Background, Edge, getOutgoers, IsValidConnection, Node, NodeTypes, OnReconnect, ReactFlow, useReactFlow } from "@xyflow/react";
 
 import { ColorNode, MixNode, OutputNode } from "./nodes/nodes";
 import { useStoreActions, useEdgeStore, useNodeStore } from "@/lib/store";
@@ -15,7 +15,9 @@ export default function NodeEditor() {
   const edges = useEdgeStore();
   const { onNodesChange, onEdgesChange, onConnect, onReconnect, deleteEdge } =
     useStoreActions();
+  const { getNodes, getEdges } = useReactFlow();
 
+  // allow for reconnecting edges and deleting edges on drop
   // https://reactflow.dev/examples/edges/delete-edge-on-drop
   const edgeReconnectSuccessful = useRef(true);
 
@@ -38,6 +40,30 @@ export default function NodeEditor() {
     edgeReconnectSuccessful.current = true;
   }, [deleteEdge]);
 
+  // prevent cycles
+  // https://reactflow.dev/examples/interaction/prevent-cycles
+  const isValidConnection: IsValidConnection = useCallback(
+    (connection) => {
+      const nodes = getNodes();
+      const edges = getEdges();
+      const target = nodes.find((node) => node.id === connection.target)!;
+      const hasCycle = (node: Node, visited = new Set()) => {
+        if (visited.has(node.id)) return false;
+ 
+        visited.add(node.id);
+ 
+        for (const outgoer of getOutgoers(node, nodes, edges)) {
+          if (outgoer.id === connection.source) return true;
+          if (hasCycle(outgoer, visited)) return true;
+        }
+      };
+ 
+      if (target.id === connection.source) return false;
+      return !hasCycle(target);
+    },
+    [getNodes, getEdges]
+  )
+
   return (
     <ReactFlow
       nodes={nodes}
@@ -48,6 +74,7 @@ export default function NodeEditor() {
       onReconnect={onReconnectSuccess}
       onReconnectStart={onReconnectStart}
       onReconnectEnd={onReconnectEnd}
+      isValidConnection={isValidConnection}
       nodeTypes={nodeTypes}
       fitView
     >

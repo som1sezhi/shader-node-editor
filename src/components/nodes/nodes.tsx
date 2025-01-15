@@ -31,10 +31,22 @@ function OutputHandle({ id }: { id: string }) {
   return <BaseHandle type="source" position={Position.Right} id={id} />;
 }
 
-function NodeBody({ name, children }: { name: string; children: ReactNode }) {
+function NodeBody({
+  name,
+  selected,
+  children,
+}: {
+  name: string;
+  selected?: boolean;
+  children: ReactNode;
+}) {
   return (
-    <div className="rounded-md bg-neutral-50 shadow-xl text-xs">
-      <p className="rounded-t-md px-2 py-1 bg-red-300 shadow-sm">{name}</p>
+    <div
+      className={`${selected ? "outline outline-2 outline-blue-500 outline-offset-1" : ""} rounded-md bg-neutral-50 shadow-xl text-xs min-w-24`}
+    >
+      <p className={`rounded-t-md px-2 pt-1 pb-0.5 bg-red-300 shadow-sm`}>
+        {name}
+      </p>
       <div className="flex flex-col gap-1 pt-1 pb-2">{children}</div>
     </div>
   );
@@ -84,7 +96,7 @@ function useInput(id: string) {
 
 type ColorNode = Node<{ color: Vec3 }>;
 
-export function ColorNode({ id, data }: NodeProps<ColorNode>) {
+export function ColorNode({ id, data, selected }: NodeProps<ColorNode>) {
   const { updateNodeData } = useReactFlow();
   const [color, setColor] = useState<Vec3>(data.color);
 
@@ -100,7 +112,7 @@ export function ColorNode({ id, data }: NodeProps<ColorNode>) {
   const colorHex = useMemo(() => rgb2hex(color), [color]);
 
   return (
-    <NodeBody name="Color">
+    <NodeBody name="Color" selected={selected}>
       <OutputRow id="color" label="Color" />
       <NodeRow>
         <input
@@ -116,7 +128,7 @@ export function ColorNode({ id, data }: NodeProps<ColorNode>) {
 
 type MixNode = Node<{ color: Vec3 }>;
 
-export function MixNode({ id }: NodeProps<MixNode>) {
+export function MixNode({ id, selected }: NodeProps<MixNode>) {
   const { updateNodeData } = useReactFlow();
 
   const in1NodeData = useInput("in1");
@@ -134,7 +146,7 @@ export function MixNode({ id }: NodeProps<MixNode>) {
   }, [in1NodeData, in2NodeData, id, updateNodeData]);
 
   return (
-    <NodeBody name="Mix">
+    <NodeBody name="Mix" selected={selected}>
       <OutputRow id="out" label="Output" />
       <InputRow id="in1" label="Input 1" />
       <InputRow id="in2" label="Input 2" />
@@ -142,7 +154,7 @@ export function MixNode({ id }: NodeProps<MixNode>) {
   );
 }
 
-export function OutputNode() {
+export function OutputNode({ selected }: NodeProps) {
   const connections = useHandleConnections({
     type: "target",
     id: "color1",
@@ -156,7 +168,7 @@ export function OutputNode() {
   };
 
   return (
-    <NodeBody name="Output Color">
+    <NodeBody name="Output Color" selected={selected}>
       <InputRow id="color1" label="Color" />
       <InputRow id="color2" label="Color" />
       <div
