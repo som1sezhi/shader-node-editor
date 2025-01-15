@@ -1,88 +1,15 @@
-import { Vec3 } from "@/lib/types";
+import { ShaderNodeData, Vec3 } from "@/lib/types";
 import { hex2rgb, rgb2hex } from "@/lib/utils";
 import {
-  Handle,
-  HandleProps,
   NodeProps,
   Node,
-  Position,
   useReactFlow,
   useHandleConnections,
   useNodesData,
 } from "@xyflow/react";
-import {
-  ChangeEvent,
-  ReactNode,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
-
-function BaseHandle(props: HandleProps) {
-  return <Handle className="w-2.5 h-2.5 bg-yellow-400" {...props} />;
-}
-
-function InputHandle({ id }: { id: string }) {
-  return <BaseHandle type="target" position={Position.Left} id={id} />;
-}
-
-function OutputHandle({ id }: { id: string }) {
-  return <BaseHandle type="source" position={Position.Right} id={id} />;
-}
-
-function NodeBody({
-  name,
-  selected,
-  children,
-}: {
-  name: string;
-  selected?: boolean;
-  children: ReactNode;
-}) {
-  return (
-    <div
-      className={`${selected ? "outline outline-2 outline-blue-500 outline-offset-1" : ""} rounded-md bg-neutral-50 shadow-xl text-xs min-w-24`}
-    >
-      <p className={`rounded-t-md px-2 pt-1 pb-0.5 bg-red-300 shadow-sm`}>
-        {name}
-      </p>
-      <div className="flex flex-col gap-1 pt-1 pb-2">{children}</div>
-    </div>
-  );
-}
-
-function NodeRow({ rtl, children }: { rtl?: boolean; children: ReactNode }) {
-  const flexDir = rtl ? "flex-row-reverse" : "flex-row";
-  return (
-    <div className={`relative flex ${flexDir} items-center px-3`}>
-      {children}
-    </div>
-  );
-}
-
-interface InputRowProps {
-  id: string;
-  label: string;
-}
-
-function InputRow({ id, label }: InputRowProps) {
-  return (
-    <NodeRow>
-      <InputHandle id={id} />
-      <label htmlFor={id}>{label}</label>
-    </NodeRow>
-  );
-}
-
-function OutputRow({ id, label }: { id: string; label: string }) {
-  return (
-    <NodeRow rtl>
-      <OutputHandle id={id} />
-      <label htmlFor={id}>{label}</label>
-    </NodeRow>
-  );
-}
+import { ChangeEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { InputRow, NodeBody, NodeRow, OutputRow } from "./nodeParts";
+import { shaderNodeTypes } from "@/lib/shaderNodeTypes";
 
 function useInput(id: string) {
   const connections = useHandleConnections({
@@ -92,6 +19,45 @@ function useInput(id: string) {
   const nodeData = useNodesData<ColorNode>(connections[0]?.source);
 
   return nodeData;
+}
+
+type ShaderNode = Node<ShaderNodeData>;
+
+export function ShaderNode({ id, data, selected }: NodeProps<ShaderNode>) {
+  const { updateNodeData } = useReactFlow<ShaderNode>();
+
+  const { name, inputs, outputs } = shaderNodeTypes[data.nodeType];
+
+  const inputComponents = inputs.map((inputControl) => {
+    const { id: handleId, label, type } = inputControl;
+    const onChange = (newVal: unknown) => {
+      updateNodeData(id, {
+        inputValues: { ...data.inputValues, [handleId]: newVal },
+      });
+    };
+    const InputComponent = type.component;
+    return (
+      <InputComponent
+        key={handleId}
+        id={handleId}
+        label={label}
+        value={data.inputValues[handleId]}
+        onChange={onChange}
+      />
+    );
+  });
+
+  const outputComponents = outputs.map((outputPort) => {
+    const { id: handleId, label } = outputPort;
+    return <OutputRow key={handleId} id={handleId} label={label} />;
+  });
+
+  return (
+    <NodeBody name={name} selected={selected}>
+      {outputComponents}
+      {inputComponents}
+    </NodeBody>
+  );
 }
 
 type ColorNode = Node<{ color: Vec3 }>;

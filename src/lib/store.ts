@@ -12,6 +12,14 @@ import {
 } from "@xyflow/react";
 import { create } from "zustand";
 import { useShallow } from "zustand/shallow";
+import { customAlphabet } from "nanoid";
+import { shaderNodeTypes } from "./shaderNodeTypes";
+import { ShaderNodeData } from "./types";
+
+const nanoid = customAlphabet(
+  "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
+  10
+);
 
 const DEFAULT_VERTEX_SHADER = /* glsl */ `
 void main() {
@@ -33,6 +41,7 @@ interface AppState {
     onEdgesChange: OnEdgesChange;
     onConnect: OnConnect;
     onReconnect: OnReconnect;
+    addNode: (type: keyof typeof shaderNodeTypes) => void;
     deleteEdge: (id: string) => void;
   };
 }
@@ -98,6 +107,26 @@ const useStore = create<AppState>((set, get) => ({
           e.targetHandle !== newConnection.targetHandle
       );
       set({ edges: reconnectEdge(oldEdge, newConnection, edges) });
+    },
+
+    addNode: (nodeType) => {
+      const id = nanoid();
+      const position = { x: 0, y: 0 };
+      const { inputs, outputs } = shaderNodeTypes[nodeType];
+      const data: ShaderNodeData = {
+        nodeType,
+        inputValues: {},
+        outputTypes: {},
+      };
+      inputs.map((input) => {
+        data.inputValues[input.id] = input.type.defaultValue;
+      });
+      outputs.map((output) => {
+        data.outputTypes[output.id] = output.type;
+      });
+      set({
+        nodes: [...get().nodes, { id, position, data, type: "ShaderNode" }],
+      });
     },
 
     deleteEdge: (id) => {
