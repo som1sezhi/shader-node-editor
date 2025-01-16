@@ -38,6 +38,7 @@ function PreviewMesh() {
   return (
     <mesh ref={mesh} scale={1}>
       <boxGeometry args={[1, 1, 1]} />
+      <torusGeometry />
       <shaderMaterial
         fragmentShader={fragShader}
         vertexShader={vertShader}

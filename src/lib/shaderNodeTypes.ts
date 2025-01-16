@@ -1,9 +1,26 @@
 import { ShaderNodeTypeInstance, typeCheckShaderNode } from "@/lib/types";
 import { inputTypes } from "@/components/nodes/inputComponents";
 
+const varyings = {
+  NORMAL: "varying vec3 v_normal;"
+};
+
 export const OUTPUT_NODE_TYPE = "fragmentOutput";
 
 export const shaderNodeTypes: Record<string, ShaderNodeTypeInstance> = {
+  normal: typeCheckShaderNode({
+    name: "Normal",
+    inputs: [] as const,
+    outputs: [{ id: "out", type: "vec3", label: "Normal"}] as const,
+
+    emitCode({ vars }) {
+      return {
+        requiredVaryings: [varyings.NORMAL],
+        assignment: /* glsl */`${vars.out} = normalize(v_normal);`
+      }
+    }
+  }),
+
   color: typeCheckShaderNode({
     name: "Color",
     inputs: [
@@ -13,7 +30,7 @@ export const shaderNodeTypes: Record<string, ShaderNodeTypeInstance> = {
 
     emitCode({ vars }) {
       return {
-        fnCall: /* glsl */ `${vars.out} = ${vars.color};`,
+        assignment: /* glsl */ `${vars.out} = ${vars.color};`,
       };
     },
   }),
@@ -26,13 +43,12 @@ export const shaderNodeTypes: Record<string, ShaderNodeTypeInstance> = {
     ] as const,
     outputs: [{ id: "out", type: "vec3", label: "Output" }] as const,
 
-    emitCode({ vars }) {
+    emitCode() {
       return {
         fnSource: /* glsl */ `
 void node_mix(vec3 a, vec3 b, out vec3 o) {
   o = (a + b) * 0.5;
 }`,
-        fnCall: /* glsl */ `node_mix(${vars.in1}, ${vars.in2}, ${vars.out});`,
       };
     },
   }),
@@ -44,7 +60,7 @@ void node_mix(vec3 a, vec3 b, out vec3 o) {
 
     emitCode({ vars }) {
       return {
-        fnCall: /* glsl */ `gl_FragColor = vec4(${vars.color}, 1.0);`,
+        assignment: /* glsl */ `gl_FragColor = vec4(${vars.color}, 1.0);`,
       };
     },
   }),

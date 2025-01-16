@@ -92,11 +92,13 @@ export function compileShader(
     visit(start);
   }
 
+  const varyingDeclarations = new Set<string>();
   const uniformsToWatch: Record<string, { value: unknown }> = {};
   let uniformDeclarations = "";
-  const funcDefinitions: Map<string, string> = new Map();
+  const funcDefinitions = new Map<string, string>();
   let mainBody = "";
 
+  // Visit nodes in topological sort order
   for (let i = visitOrder.length - 1; i >= 0; i--) {
     const nodeId = visitOrder[i];
     const { data: nodeData } = nodeLookup.get(nodeId)!;
@@ -104,6 +106,8 @@ export function compileShader(
     const edges = incomingEdges.get(nodeId)!;
 
     const vars: Record<string, string> = {};
+    const callArgs: string[] = [];
+  
     for (const input of nodeType.inputs) {
       if (input.type.kind != "port" && input.type.kind != "outputControl")
         continue;
@@ -115,45 +119,57 @@ export function compileShader(
         const uniformVarType = input.type.glslDataType;
         const uniformVarName = createUniformVariableName(nodeId, input.id);
         vars[input.id] = uniformVarName;
+        callArgs.push(uniformVarName);
         uniformDeclarations += `uniform ${uniformVarType} ${uniformVarName};\n`;
         uniformsToWatch[uniformVarName] = {
           value: nodeData.inputValues[input.id],
         };
       } else {
         // An edge is connected, take value from output variable
-        vars[input.id] = createOutputVariableName(
+        const outputVarName = createOutputVariableName(
           edge.source,
           edge.sourceHandle!
         );
+        vars[input.id] = outputVarName;
+        callArgs.push(outputVarName);
       }
     }
     for (const output of nodeType.outputs) {
       const outputVarType = nodeData.outputTypes[output.id];
       const outputVarName = createOutputVariableName(nodeId, output.id);
       vars[output.id] = outputVarName;
+      callArgs.push(outputVarName);
       mainBody += `  ${outputVarType} ${outputVarName};\n`;
     }
-    const { fnSource, fnCall } = nodeType.emitCode({ nodeData, vars });
-    if (fnSource) {
-      const fnName = extractFuncName(fnSource);
-      funcDefinitions.set(fnName, fnSource + "\n");
+
+    const emitted = nodeType.emitCode({ nodeData, vars });
+    if ("fnSource" in emitted) {
+      const fnName = extractFuncName(emitted.fnSource);
+      funcDefinitions.set(fnName, emitted.fnSource);
+      let fnCall = emitted.fnCall;
+      if (fnCall === undefined) {
+        fnCall = `${fnName}(${callArgs.join(", ")});`
+      }
+      mainBody += "  " + fnCall + "\n";
+    } else {
+      mainBody += "  " + emitted.assignment + "\n";
     }
-    mainBody += "  " + fnCall + "\n";
+    if (emitted.requiredVaryings) {
+      for (const varyingDecl of emitted.requiredVaryings)
+        varyingDeclarations.add(varyingDecl);
+    }
   }
 
-  const allFuncDefinitions = funcDefinitions
-    .values()
-    .reduce((accum, def) => accum + def, "");
-
-  const fragShader = `${uniformDeclarations}
-${allFuncDefinitions}
+  const fragShader = `${Array.from(varyingDeclarations).join("\n")}
+${uniformDeclarations}
+${Array.from(funcDefinitions.values()).join("\n")}
 void main() {
 ${mainBody}}`;
 
   // Optimize code using globally-loaded function.
   // Will return null if function is not loaded yet
-  const optFragShader = window.optimize_glsl(fragShader);
-  
+  const optFragShader = window.optimize_glsl(fragShader, 1, false);
+
   console.log(optFragShader);
   console.log(fragShader);
 

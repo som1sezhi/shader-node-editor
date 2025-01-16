@@ -2,11 +2,14 @@ import { ReactElement } from "react";
 import { shaderNodeTypes } from "./shaderNodeTypes";
 import { Node } from "@xyflow/react";
 
+export type Vec2 = [number, number];
 export type Vec3 = [number, number, number];
 
 
 type CompatibleGLSLDataType<JSType> = JSType extends number
   ? "float"
+  : JSType extends Vec2
+  ? "vec2"
   : JSType extends Vec3
   ? "vec3"
   : never;
@@ -53,7 +56,7 @@ export type InputPortOrControlType<JSType> =
 type GetJSType<T> = T extends InputPortOrControlType<infer X> ? X : never;
 
 type CoordSpace = "world" | "view";
-type InputNodeDataType = number | Vec3 | CoordSpace;
+type InputNodeDataType = number | Vec2 | Vec3 | CoordSpace;
 type GLSLDataType = CompatibleGLSLDataType<InputNodeDataType>;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -97,9 +100,13 @@ interface EmitCodeArgs<
   vars: Record<Inputs[number]["id"] | Outputs[number]["id"], string>;
 }
 
-interface EmittedCode {
-  fnSource?: string;
-  fnCall: string;
+type EmittedCode = {
+  fnSource: string;
+  fnCall?: string;
+  requiredVaryings?: string[];
+} | {
+  assignment: string;
+  requiredVaryings?: string[];
 }
 
 interface ShaderNodeType<
