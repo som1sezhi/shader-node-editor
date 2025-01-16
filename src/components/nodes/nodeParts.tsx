@@ -45,7 +45,7 @@ export function NodeRow({
 }) {
   const flexDir = rtl ? "flex-row-reverse" : "flex-row";
   return (
-    <div className={`relative flex ${flexDir} items-center px-3`}>
+    <div className={`relative flex ${flexDir} items-center px-2`}>
       {children}
     </div>
   );
@@ -54,7 +54,7 @@ export function NodeRow({
 interface InputRowProps {
   id: string;
   label: string;
-  children?: ReactElement;
+  children?: ReactElement | null;
 }
 
 export function InputRow({ id, label, children }: InputRowProps) {

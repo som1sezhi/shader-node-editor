@@ -9,17 +9,15 @@ import {
   Panel,
   ReactFlow,
   useReactFlow,
+  useUpdateNodeInternals,
 } from "@xyflow/react";
 
-import { ColorNode, MixNode, OutputNode, ShaderNode } from "./nodes/nodes";
+import { ShaderNode } from "./nodes/nodes";
 import { useStoreActions, useEdgeStore, useNodeStore } from "@/lib/store";
 import { useCallback, useRef } from "react";
 import { shaderNodeTypes } from "@/lib/shaderNodeTypes";
 
 const nodeTypes: NodeTypes = {
-  ColorNode,
-  OutputNode,
-  MixNode,
   ShaderNode,
 };
 
@@ -33,8 +31,10 @@ export default function NodeEditor() {
     onReconnect,
     addNode,
     deleteEdge,
+    compile,
   } = useStoreActions();
   const { getNodes, getEdges } = useReactFlow();
+  const updateNodeInternals = useUpdateNodeInternals();
 
   // allow for reconnecting edges and deleting edges on drop
   // https://reactflow.dev/examples/edges/delete-edge-on-drop
@@ -48,8 +48,12 @@ export default function NodeEditor() {
     (oldEdge, newConnection) => {
       edgeReconnectSuccessful.current = true;
       onReconnect(oldEdge, newConnection);
+      // reconnecting an edge to another input may cause visual glitches
+      // unless we update node internals (for some reason this doesn't
+      // seem to be a problem with connecting edges the 1st time?)
+      updateNodeInternals(newConnection.target);
     },
-    [onReconnect]
+    [onReconnect, updateNodeInternals]
   );
 
   const onReconnectEnd = useCallback(
@@ -103,12 +107,19 @@ export default function NodeEditor() {
       <Panel position="top-right">
         {Object.entries(shaderNodeTypes).map(([key, type]) => (
           <button
+            className="bg-slate-300 rounded-md px-1 mr-1"
             key={key}
             onClick={() => addNode(key as keyof typeof shaderNodeTypes)}
           >
             {type.name}
           </button>
         ))}
+        <button
+          className="bg-green-300 rounded-md px-1"
+          onClick={() => compile()}
+        >
+          Compile
+        </button>
       </Panel>
       <Background />
     </ReactFlow>

@@ -1,4 +1,5 @@
-import { ShaderNodeData, Vec3 } from "@/lib/types";
+import { Vec3 } from "@/lib/types";
+import type { ShaderNode } from "@/lib/types";
 import { hex2rgb, rgb2hex } from "@/lib/utils";
 import {
   NodeProps,
@@ -10,6 +11,7 @@ import {
 import { ChangeEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { InputRow, NodeBody, NodeRow, OutputRow } from "./nodeParts";
 import { shaderNodeTypes } from "@/lib/shaderNodeTypes";
+import { useStoreActions } from "@/lib/store";
 
 function useInput(id: string) {
   const connections = useHandleConnections({
@@ -21,19 +23,15 @@ function useInput(id: string) {
   return nodeData;
 }
 
-type ShaderNode = Node<ShaderNodeData>;
-
 export function ShaderNode({ id, data, selected }: NodeProps<ShaderNode>) {
-  const { updateNodeData } = useReactFlow<ShaderNode>();
+  const { updateInputData } = useStoreActions();
 
   const { name, inputs, outputs } = shaderNodeTypes[data.nodeType];
 
   const inputComponents = inputs.map((inputControl) => {
     const { id: handleId, label, type } = inputControl;
     const onChange = (newVal: unknown) => {
-      updateNodeData(id, {
-        inputValues: { ...data.inputValues, [handleId]: newVal },
-      });
+      updateInputData(id, handleId, newVal);
     };
     const InputComponent = type.component;
     return (

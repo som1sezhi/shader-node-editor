@@ -1,5 +1,6 @@
 import { ReactElement } from "react";
 import { shaderNodeTypes } from "./shaderNodeTypes";
+import { Node } from "@xyflow/react";
 
 export type Vec3 = [number, number, number];
 
@@ -17,21 +18,28 @@ export type InputPortOrControlComponent<JSType> = (props: {
   onChange: (newVal: JSType) => void;
 }) => ReactElement;
 
-interface InputPortType<JSType> {
+export interface InputPortType<JSType> {
   kind: "port";
   glslDataType: CompatibleGLSLDataType<JSType>;
 	component: InputPortOrControlComponent<JSType>;
 	defaultValue: JSType;
 }
 
-interface DynamicInputPortType<JSType> {
+export interface DynamicInputPortType<JSType> {
   kind: "dynamicPort";
 	component: InputPortOrControlComponent<JSType>;
 	defaultValue: JSType;
 }
 
-interface ControlType<JSType> {
+export interface ControlType<JSType> {
   kind: "control";
+	component: InputPortOrControlComponent<JSType>;
+	defaultValue: JSType;
+}
+
+export interface OutputControlType<JSType> {
+  kind: "outputControl";
+  glslDataType: CompatibleGLSLDataType<JSType>;
 	component: InputPortOrControlComponent<JSType>;
 	defaultValue: JSType;
 }
@@ -39,7 +47,8 @@ interface ControlType<JSType> {
 export type InputPortOrControlType<JSType> =
   | InputPortType<JSType>
   | DynamicInputPortType<JSType>
-  | ControlType<JSType>;
+  | ControlType<JSType>
+  | OutputControlType<JSType>
 
 type GetJSType<T> = T extends InputPortOrControlType<infer X> ? X : never;
 
@@ -102,6 +111,10 @@ interface ShaderNodeType<
   outputs: Outputs;
   emitCode: (args: EmitCodeArgs<Inputs, Outputs>) => EmittedCode;
 }
+
+export type ShaderNodeTypeInstance = ShaderNodeType<InputPortOrControl[], OutputPort[]>
+
+export type ShaderNode = Node<ShaderNodeData>;
 
 export function typeCheckShaderNode<
   Inputs extends InputPortOrControl[],
