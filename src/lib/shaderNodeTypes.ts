@@ -2,7 +2,8 @@ import { ShaderNodeTypeInstance, typeCheckShaderNode } from "@/lib/types";
 import { inputTypes } from "@/components/nodes/inputComponents";
 
 const varyings = {
-  NORMAL: "varying vec3 v_normal;"
+  NORMAL: "varying vec3 v_normal;",
+  UV: "varying vec2 v_uv;",
 };
 
 export const OUTPUT_NODE_TYPE = "fragmentOutput";
@@ -11,14 +12,27 @@ export const shaderNodeTypes: Record<string, ShaderNodeTypeInstance> = {
   normal: typeCheckShaderNode({
     name: "Normal",
     inputs: [] as const,
-    outputs: [{ id: "out", type: "vec3", label: "Normal"}] as const,
+    outputs: [{ id: "out", type: "vec3", label: "Normal" }] as const,
 
     emitCode({ vars }) {
       return {
         requiredVaryings: [varyings.NORMAL],
-        assignment: /* glsl */`${vars.out} = normalize(v_normal);`
-      }
-    }
+        assignment: /* glsl */ `${vars.out} = normalize(v_normal);`,
+      };
+    },
+  }),
+
+  uv: typeCheckShaderNode({
+    name: "UV",
+    inputs: [] as const,
+    outputs: [{ id: "out", type: "vec2", label: "UV" }] as const,
+
+    emitCode({ vars }) {
+      return {
+        requiredVaryings: [varyings.UV],
+        assignment: /* glsl */ `${vars.out} = v_uv;`,
+      };
+    },
   }),
 
   color: typeCheckShaderNode({

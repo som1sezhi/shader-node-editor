@@ -1,16 +1,49 @@
 import { Handle, HandleProps, Position } from "@xyflow/react";
 import { Fragment, ReactElement, ReactNode } from "react";
 
-function BaseHandle(props: HandleProps) {
-  return <Handle className="w-2.5 h-2.5 bg-yellow-400" {...props} />;
+const typeToColor = {
+  float: "bg-gray-400",
+  vec2: "bg-lime-400",
+  vec3: "bg-yellow-400",
+  dynamicVec: "bg-blue-400",
+};
+
+export type HandleDataType = keyof typeof typeToColor;
+
+interface ColoredHandleProps extends HandleProps {
+  handleType: HandleDataType;
 }
 
-function InputHandle({ id }: { id: string }) {
-  return <BaseHandle type="target" position={Position.Left} id={id} />;
+function BaseHandle({ handleType, ...rest }: ColoredHandleProps) {
+  const color = typeToColor[handleType];
+  return <Handle className={`w-2.5 h-2.5 ${color}`} {...rest} />;
 }
 
-function OutputHandle({ id }: { id: string }) {
-  return <BaseHandle type="source" position={Position.Right} id={id} />;
+interface ShaderNodeHandleProps {
+  id: string;
+  handleType: HandleDataType;
+}
+
+function InputHandle({ id, handleType }: ShaderNodeHandleProps) {
+  return (
+    <BaseHandle
+      type="target"
+      position={Position.Left}
+      id={id}
+      handleType={handleType}
+    />
+  );
+}
+
+function OutputHandle({ id, handleType }: ShaderNodeHandleProps) {
+  return (
+    <BaseHandle
+      type="source"
+      position={Position.Right}
+      id={id}
+      handleType={handleType}
+    />
+  );
 }
 
 export function NodeBody({
@@ -54,14 +87,21 @@ export function NodeRow({
 interface InputRowProps {
   id: string;
   label: string;
+  handleType: HandleDataType | null;
   children?: ReactElement | null;
 }
 
-export function InputRow({ id, label, children }: InputRowProps) {
+interface OutputRowProps {
+  id: string;
+  label: string;
+  handleType: HandleDataType;
+}
+
+export function InputRow({ id, label, handleType, children }: InputRowProps) {
   return (
     <Fragment>
       <NodeRow>
-        <InputHandle id={id} />
+        {handleType ? <InputHandle id={id} handleType={handleType} /> : null}
         <label htmlFor={id}>{label}</label>
       </NodeRow>
       {children ? <NodeRow>{children}</NodeRow> : null}
@@ -69,10 +109,10 @@ export function InputRow({ id, label, children }: InputRowProps) {
   );
 }
 
-export function OutputRow({ id, label }: { id: string; label: string }) {
+export function OutputRow({ id, label, handleType }: OutputRowProps) {
   return (
     <NodeRow rtl>
-      <OutputHandle id={id} />
+      <OutputHandle id={id} handleType={handleType} />
       <label htmlFor={id}>{label}</label>
     </NodeRow>
   );

@@ -12,13 +12,16 @@ import {
   useUpdateNodeInternals,
 } from "@xyflow/react";
 
-import { ShaderNode } from "./nodes/nodes";
+import { ShaderNode as ShaderNodeComponent } from "./nodes/ShaderNode";
 import { useStoreActions, useEdgeStore, useNodeStore } from "@/lib/store";
 import { useCallback, useRef } from "react";
 import { shaderNodeTypes } from "@/lib/shaderNodeTypes";
+import { ShaderNode } from "@/lib/types";
+import { canConvert } from "@/lib/shaderTypeConversions";
+import { getSourceAndTargetDataTypes } from "@/lib/utils";
 
 const nodeTypes: NodeTypes = {
-  ShaderNode,
+  ShaderNode: ShaderNodeComponent,
 };
 
 export default function NodeEditor() {
@@ -33,7 +36,7 @@ export default function NodeEditor() {
     deleteEdge,
     compile,
   } = useStoreActions();
-  const { getNodes, getEdges } = useReactFlow();
+  const { getNodes, getEdges, getNode } = useReactFlow();
   const updateNodeInternals = useUpdateNodeInternals();
 
   // allow for reconnecting edges and deleting edges on drop
@@ -66,13 +69,29 @@ export default function NodeEditor() {
     [deleteEdge]
   );
 
-  // prevent cycles
-  // https://reactflow.dev/examples/interaction/prevent-cycles
   const isValidConnection: IsValidConnection = useCallback(
     (connection) => {
       const nodes = getNodes();
       const edges = getEdges();
-      const target = nodes.find((node) => node.id === connection.target)!;
+      const source = getNode(connection.source)! as ShaderNode;
+      const target = getNode(connection.target)! as ShaderNode;
+      // const source = nodes.find((node) => node.id === connection.target)!;
+      // const target = nodes.find((node) => node.id === connection.target)!;
+
+      // ensure data types are compatible
+      const [sourceDataType, targetDataType] = getSourceAndTargetDataTypes(
+        source,
+        target,
+        connection
+      );
+      if (
+        targetDataType === null ||
+        !canConvert(sourceDataType, targetDataType)
+      )
+        return false;
+
+      // prevent cycles
+      // https://reactflow.dev/examples/interaction/prevent-cycles
       const hasCycle = (node: Node, visited = new Set()) => {
         if (visited.has(node.id)) return false;
 
@@ -87,7 +106,7 @@ export default function NodeEditor() {
       if (target.id === connection.source) return false;
       return !hasCycle(target);
     },
-    [getNodes, getEdges]
+    [getNodes, getEdges, getNode]
   );
 
   return (

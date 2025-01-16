@@ -20,6 +20,7 @@ function Vec3InputPort() {
 const ColorInputPort: InputPortOrControlComponent<Vec3> = ({
   id,
   label,
+  handleType,
   value,
   onChange,
 }) => {
@@ -34,7 +35,7 @@ const ColorInputPort: InputPortOrControlComponent<Vec3> = ({
     [onChange]
   );
   return (
-    <InputRow id={id} label={label}>
+    <InputRow id={id} label={label} handleType={handleType}>
       {connections.length == 0 ? (
         <input
           type="color"

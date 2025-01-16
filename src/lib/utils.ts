@@ -1,4 +1,6 @@
-import { Vec3 } from "./types";
+import { Connection, Edge } from "@xyflow/react";
+import { ShaderNode, Vec3 } from "./types";
+import { shaderNodeTypes } from "./shaderNodeTypes";
 
 function clamp(x: number, lo: number, hi: number) {
   return Math.max(lo, Math.min(hi, x));
@@ -21,4 +23,18 @@ export function rgb2hex(col: Vec3) {
   return (
     "#" + component2hex(col[0]) + component2hex(col[1]) + component2hex(col[2])
   );
+}
+
+export function getSourceAndTargetDataTypes(
+  source: ShaderNode,
+  target: ShaderNode,
+  edge: Edge | Connection
+): [string, string | null] {
+  const sourceDataType = source.data.outputTypes[edge.sourceHandle!];
+  const inpControlType = shaderNodeTypes[target.data.nodeType].inputs.find(
+    (inp) => inp.id === edge.targetHandle
+  )!.type;
+  const targetDataType =
+    "glslDataType" in inpControlType ? inpControlType.glslDataType : null;
+  return [sourceDataType, targetDataType];
 }

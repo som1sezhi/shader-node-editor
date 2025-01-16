@@ -5,6 +5,8 @@ import {
   DEFAULT_VERTEX_SHADER,
 } from "./defaultShaders";
 import { OUTPUT_NODE_TYPE, shaderNodeTypes } from "./shaderNodeTypes";
+import { getSourceAndTargetDataTypes } from "./utils";
+import { convertExprType } from "./shaderTypeConversions";
 
 export function createUniformVariableName(
   nodeId: string,
@@ -126,10 +128,14 @@ export function compileShader(
         };
       } else {
         // An edge is connected, take value from output variable
-        const outputVarName = createOutputVariableName(
+        let outputVarName = createOutputVariableName(
           edge.source,
           edge.sourceHandle!
         );
+        const [sourceType, targetType] = getSourceAndTargetDataTypes(
+          nodeLookup.get(edge.source)!, nodeLookup.get(edge.target)!, edge
+        )
+        outputVarName = convertExprType(outputVarName, sourceType, targetType!);
         vars[input.id] = outputVarName;
         callArgs.push(outputVarName);
       }

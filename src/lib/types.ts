@@ -1,6 +1,7 @@
 import { ReactElement } from "react";
 import { shaderNodeTypes } from "./shaderNodeTypes";
 import { Node } from "@xyflow/react";
+import { HandleDataType } from "@/components/nodes/nodeParts";
 
 export type Vec2 = [number, number];
 export type Vec3 = [number, number, number];
@@ -17,6 +18,7 @@ type CompatibleGLSLDataType<JSType> = JSType extends number
 export type InputPortOrControlComponent<JSType> = (props: {
   id: string;
   label: string;
+  handleType: HandleDataType | null;
   value: JSType;
   onChange: (newVal: JSType) => void;
 }) => ReactElement;
