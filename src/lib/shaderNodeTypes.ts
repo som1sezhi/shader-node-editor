@@ -9,11 +9,11 @@ export const shaderNodeTypes: Record<string, ShaderNodeTypeInstance> = {
     inputs: [
       { id: "color", type: inputTypes.COLOR_OUTPUT_CONTROL, label: "Color" },
     ] as const,
-    outputs: [{ id: "output", type: "vec3", label: "Color" }] as const,
+    outputs: [{ id: "out", type: "vec3", label: "Color" }] as const,
 
     emitCode({ vars }) {
       return {
-        fnCall: /* glsl */ `${vars.output} = ${vars.color};`,
+        fnCall: /* glsl */ `${vars.out} = ${vars.color};`,
       };
     },
   }),
@@ -21,18 +21,18 @@ export const shaderNodeTypes: Record<string, ShaderNodeTypeInstance> = {
   mix: typeCheckShaderNode({
     name: "Mix",
     inputs: [
-      { id: "color1", type: inputTypes.COLOR, label: "Color 1" },
-      { id: "color2", type: inputTypes.COLOR, label: "Color 2" },
+      { id: "in1", type: inputTypes.COLOR, label: "Color 1" },
+      { id: "in2", type: inputTypes.COLOR, label: "Color 2" },
     ] as const,
-    outputs: [{ id: "output", type: "vec3", label: "Output" }] as const,
+    outputs: [{ id: "out", type: "vec3", label: "Output" }] as const,
 
     emitCode({ vars }) {
       return {
         fnSource: /* glsl */ `
-          void node_mix(vec3 a, vec3 b, out vec3 o) {
-				    o = (a + b) * 0.5;
-			    }`,
-        fnCall: /* glsl */ `node_mix(${vars.color1}, ${vars.color2}, ${vars.output});`,
+void node_mix(vec3 a, vec3 b, out vec3 o) {
+  o = (a + b) * 0.5;
+}`,
+        fnCall: /* glsl */ `node_mix(${vars.in1}, ${vars.in2}, ${vars.out});`,
       };
     },
   }),

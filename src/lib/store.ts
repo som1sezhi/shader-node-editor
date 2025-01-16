@@ -102,7 +102,7 @@ const useStore = create<AppState>()((set, get) => ({
     },
 
     addNode: (nodeType) => {
-      const id = nanoid();
+      const id = `${nodeType}_${nanoid()}`;
       const position = { x: 0, y: 0 };
       const { inputs, outputs } = shaderNodeTypes[nodeType];
       const data: ShaderNodeData = {
@@ -166,7 +166,6 @@ const useStore = create<AppState>()((set, get) => ({
         nodes as ShaderNode[],
         edges
       );
-      console.log(fragShader);
       console.log(uniformsToWatch);
       set({ fragShader, uniformsToWatch });
     },

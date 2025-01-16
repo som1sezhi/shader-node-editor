@@ -17,7 +17,7 @@ function createOutputVariableName(
   nodeId: string,
   outputPortId: string
 ): string {
-  return `o_${nodeId}_${outputPortId}`;
+  return `${nodeId}_${outputPortId}`;
 }
 
 function extractFuncName(fnSource: string): string {
@@ -94,7 +94,7 @@ export function compileShader(
 
   const uniformsToWatch: Record<string, { value: unknown }> = {};
   let uniformDeclarations = "";
-  const funcDefinitions: Record<string, string> = {};
+  const funcDefinitions: Map<string, string> = new Map();
   let mainBody = "";
 
   for (let i = visitOrder.length - 1; i >= 0; i--) {
@@ -131,26 +131,35 @@ export function compileShader(
       const outputVarType = nodeData.outputTypes[output.id];
       const outputVarName = createOutputVariableName(nodeId, output.id);
       vars[output.id] = outputVarName;
-      mainBody += outputVarType + " " + outputVarName + ";\n";
+      mainBody += `  ${outputVarType} ${outputVarName};\n`;
     }
     const { fnSource, fnCall } = nodeType.emitCode({ nodeData, vars });
     if (fnSource) {
       const fnName = extractFuncName(fnSource);
-      funcDefinitions[fnName] = fnSource + "\n";
+      funcDefinitions.set(fnName, fnSource + "\n");
     }
-    mainBody += fnCall + "\n";
+    mainBody += "  " + fnCall + "\n";
   }
 
-  let allFuncDefinitions = "";
-  for (const func of Object.values(funcDefinitions)) allFuncDefinitions += func;
+  const allFuncDefinitions = funcDefinitions
+    .values()
+    .reduce((accum, def) => accum + def, "");
+
+  const fragShader = `${uniformDeclarations}
+${allFuncDefinitions}
+void main() {
+${mainBody}}`;
+
+  // Optimize code using globally-loaded function.
+  // Will return null if function is not loaded yet
+  const optFragShader = window.optimize_glsl(fragShader);
+  
+  console.log(optFragShader);
+  console.log(fragShader);
+
   return {
     vertShader: DEFAULT_VERTEX_SHADER,
-    fragShader: `${uniformDeclarations}
-    ${allFuncDefinitions}
-
-    void main() {
-      ${mainBody}
-    }`,
+    fragShader: optFragShader ?? fragShader,
     uniformsToWatch,
   };
 }

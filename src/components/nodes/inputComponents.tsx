@@ -93,12 +93,12 @@ export const inputTypes: {
     kind: "port",
     glslDataType: "vec3",
     component: ColorInputPort,
-    defaultValue: [0, 0, 0],
+    defaultValue: [0.5, 0.5, 0.5],
   },
   COLOR_OUTPUT_CONTROL: {
     kind: "outputControl",
     glslDataType: "vec3",
     component: ColorOutputControl,
-    defaultValue: [0, 0, 0],
+    defaultValue: [0.5, 0.5, 0.5],
   },
 } as const;
