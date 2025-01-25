@@ -7,6 +7,7 @@ import {
 import { OUTPUT_NODE_TYPE, shaderNodeTypes } from "./shaderNodeTypes";
 import { getSourceAndTargetDataTypes } from "./utils";
 import { convertExprType } from "./shaderTypeConversions";
+import assert from "assert";
 
 export function createUniformVariableName(
   nodeId: string,
@@ -26,6 +27,14 @@ function extractFuncName(fnSource: string): string {
   const re = /^\s*void (\w+)\(/;
   return fnSource.match(re)![1];
 }
+
+// function getGLSLTypeFromJSValue(value: number | Vec2 | Vec3) {
+//   if (typeof value === "number")
+//     return "float";
+//   if (value.length === 2)
+//     return "vec2";
+//   return "vec3";
+// }
 
 export function compileShader(
   nodes: ShaderNode[],
@@ -109,16 +118,23 @@ export function compileShader(
 
     const vars: Record<string, string> = {};
     const callArgs: string[] = [];
-  
+
     for (const input of nodeType.inputs) {
-      if (input.type.kind != "port" && input.type.kind != "outputControl")
+      if (input.type.kind === "control")
         continue;
+
       const edge = edges[input.id];
       if (edge === undefined) {
         // No edge is plugged into this input port, or this is an
         // output control w/ no input port. Either way,
         // take value from input control (uniform variable).
-        const uniformVarType = input.type.glslDataType;
+        let uniformVarType;
+        if (input.type.kind === "dynamicPort") {
+          // uniformVarType = getGLSLTypeFromJSValue(nodeData.inputValues[input.id]);
+          assert(nodeData.concreteTypes !== undefined)
+          uniformVarType = nodeData.concreteTypes[input.type.key];
+        } else
+          uniformVarType = input.type.glslDataType;
         const uniformVarName = createUniformVariableName(nodeId, input.id);
         vars[input.id] = uniformVarName;
         callArgs.push(uniformVarName);
@@ -133,9 +149,18 @@ export function compileShader(
           edge.sourceHandle!
         );
         const [sourceType, targetType] = getSourceAndTargetDataTypes(
-          nodeLookup.get(edge.source)!, nodeLookup.get(edge.target)!, edge
-        )
-        outputVarName = convertExprType(outputVarName, sourceType, targetType!);
+          nodeLookup.get(edge.source)!,
+          nodeLookup.get(edge.target)!,
+          edge
+        );
+        let targetGLSLType;
+        if (targetType === "dynamic") {
+          assert(nodeData.concreteTypes !== undefined);
+          targetGLSLType = nodeData.concreteTypes[targetType];
+        } else {
+          targetGLSLType = targetType!;
+        }
+        outputVarName = convertExprType(outputVarName, sourceType, targetGLSLType);
         vars[input.id] = outputVarName;
         callArgs.push(outputVarName);
       }
@@ -154,7 +179,7 @@ export function compileShader(
       funcDefinitions.set(fnName, emitted.fnSource);
       let fnCall = emitted.fnCall;
       if (fnCall === undefined) {
-        fnCall = `${fnName}(${callArgs.join(", ")});`
+        fnCall = `${fnName}(${callArgs.join(", ")});`;
       }
       mainBody += "  " + fnCall + "\n";
     } else {
@@ -179,9 +204,29 @@ ${mainBody}}`;
   console.log(optFragShader);
   console.log(fragShader);
 
+  // The optimizer seems to have a habit of breaking for no reason,
+  // so we safeguard against this case.
+  // Character set retrieved from:
+  // https://www.opengl.org/sdk/docs/tutorials/TyphoonLabs/Chapter_2.pdf
+  let fragShaderToUse;
+  if (
+    optFragShader === null ||
+    !/^[-0-9A-Za-z_.+*/%<>\[\]{}()^|&~=!:;,?# \t\v\r\n\f]+$/.test(optFragShader)
+  ) {
+    console.warn(`Malformed optimized code found, falling back on unoptimized code.
+========== Original code: ==========
+${fragShader}
+
+========== Optimized code: ==========
+${optFragShader}`);
+    fragShaderToUse = fragShader;
+  } else {
+    fragShaderToUse = optFragShader;
+  }
+
   return {
     vertShader: DEFAULT_VERTEX_SHADER,
-    fragShader: optFragShader ?? fragShader,
+    fragShader: fragShaderToUse,
     uniformsToWatch,
   };
 }

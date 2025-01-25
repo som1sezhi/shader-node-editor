@@ -1,6 +1,7 @@
 import { Connection, Edge } from "@xyflow/react";
-import { ShaderNode, Vec3 } from "./types";
+import { DynamicDataType, GLSLDataType, InputPortOrControlType, ShaderNode, Vec3 } from "./types";
 import { shaderNodeTypes } from "./shaderNodeTypes";
+import { strict as assert } from "assert";
 
 function clamp(x: number, lo: number, hi: number) {
   return Math.max(lo, Math.min(hi, x));
@@ -29,12 +30,26 @@ export function getSourceAndTargetDataTypes(
   source: ShaderNode,
   target: ShaderNode,
   edge: Edge | Connection
-): [string, string | null] {
+): [GLSLDataType, GLSLDataType | DynamicDataType | null] {
   const sourceDataType = source.data.outputTypes[edge.sourceHandle!];
   const inpControlType = shaderNodeTypes[target.data.nodeType].inputs.find(
     (inp) => inp.id === edge.targetHandle
   )!.type;
-  const targetDataType =
-    "glslDataType" in inpControlType ? inpControlType.glslDataType : null;
+  let targetDataType = null;
+  if (inpControlType.kind === "dynamicPort")
+    targetDataType = inpControlType.key;
+  else if ("glslDataType" in inpControlType)
+    targetDataType = inpControlType.glslDataType;
   return [sourceDataType, targetDataType];
+}
+
+export function getTargetInput(
+  target: ShaderNode,
+  edge: Edge | Connection
+): InputPortOrControlType<unknown> {
+  const inpControlType = shaderNodeTypes[target.data.nodeType].inputs.find(
+    (inp) => inp.id === edge.targetHandle
+  )?.type;
+  assert(!!inpControlType);
+  return inpControlType;
 }

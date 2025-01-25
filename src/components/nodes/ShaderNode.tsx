@@ -5,7 +5,7 @@ import { shaderNodeTypes } from "@/lib/shaderNodeTypes";
 import { useStoreActions } from "@/lib/store";
 
 export function ShaderNode({ id, data, selected }: NodeProps<ShaderNode>) {
-  const { updateInputData } = useStoreActions();
+  const { updateInputData, compile } = useStoreActions();
 
   const { name, inputs, outputs } = shaderNodeTypes[data.nodeType];
 
@@ -13,9 +13,17 @@ export function ShaderNode({ id, data, selected }: NodeProps<ShaderNode>) {
     const { id: handleId, label, type } = inputControl;
     const onChange = (newVal: unknown) => {
       updateInputData(id, handleId, newVal);
+      // almost always, if a control-type input is changed, we need
+      // to recompile
+      if (type.kind === "control")
+        compile();
     };
     const InputComponent = type.component;
-    const handleType = "glslDataType" in type ? type.glslDataType : null;
+    let handleType = null;
+    if ("glslDataType" in type)
+      handleType = type.glslDataType;
+    else if (type.kind === "dynamicPort")
+      handleType = type.key;
     return (
       <InputComponent
         key={handleId}
@@ -29,13 +37,13 @@ export function ShaderNode({ id, data, selected }: NodeProps<ShaderNode>) {
   });
 
   const outputComponents = outputs.map((outputPort) => {
-    const { id: handleId, type: handleType, label } = outputPort;
+    const { id: handleId, label } = outputPort;
     return (
       <OutputRow
         key={handleId}
         id={handleId}
         label={label}
-        handleType={handleType}
+        handleType={data.outputTypes[handleId]}
       />
     );
   });

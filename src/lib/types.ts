@@ -6,14 +6,20 @@ import { HandleDataType } from "@/components/nodes/nodeParts";
 export type Vec2 = [number, number];
 export type Vec3 = [number, number, number];
 
-
 type CompatibleGLSLDataType<JSType> = JSType extends number
   ? "float"
   : JSType extends Vec2
   ? "vec2"
   : JSType extends Vec3
   ? "vec3"
+  : JSType extends unknown
+  ? "float" | "vec2" | "vec3"
   : never;
+
+type CoordSpace = "world" | "view";
+type InputNodeDataType = number | Vec2 | Vec3 | CoordSpace;
+export type GLSLDataType = CompatibleGLSLDataType<InputNodeDataType>;
+export type DynamicDataType = "dynamic";
 
 export type InputPortOrControlComponent<JSType> = (props: {
   id: string;
@@ -26,40 +32,41 @@ export type InputPortOrControlComponent<JSType> = (props: {
 export interface InputPortType<JSType> {
   kind: "port";
   glslDataType: CompatibleGLSLDataType<JSType>;
-	component: InputPortOrControlComponent<JSType>;
-	defaultValue: JSType;
+  component: InputPortOrControlComponent<JSType>;
+  defaultValue: JSType;
 }
 
 export interface DynamicInputPortType<JSType> {
   kind: "dynamicPort";
-	component: InputPortOrControlComponent<JSType>;
-	defaultValue: JSType;
+  component: InputPortOrControlComponent<JSType>;
+  decideConcreteType: (
+    connectedInputTypes: GLSLDataType[]
+  ) => CompatibleGLSLDataType<JSType>;
+  key: DynamicDataType;
+  defaultValue: JSType;
+  defaultConcreteType: GLSLDataType;
 }
 
 export interface ControlType<JSType> {
   kind: "control";
-	component: InputPortOrControlComponent<JSType>;
-	defaultValue: JSType;
+  component: InputPortOrControlComponent<JSType>;
+  defaultValue: JSType;
 }
 
 export interface OutputControlType<JSType> {
   kind: "outputControl";
   glslDataType: CompatibleGLSLDataType<JSType>;
-	component: InputPortOrControlComponent<JSType>;
-	defaultValue: JSType;
+  component: InputPortOrControlComponent<JSType>;
+  defaultValue: JSType;
 }
 
 export type InputPortOrControlType<JSType> =
   | InputPortType<JSType>
   | DynamicInputPortType<JSType>
   | ControlType<JSType>
-  | OutputControlType<JSType>
+  | OutputControlType<JSType>;
 
 type GetJSType<T> = T extends InputPortOrControlType<infer X> ? X : never;
-
-type CoordSpace = "world" | "view";
-type InputNodeDataType = number | Vec2 | Vec3 | CoordSpace;
-type GLSLDataType = CompatibleGLSLDataType<InputNodeDataType>;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface InputPortOrControl<JSType = any> {
@@ -68,7 +75,7 @@ interface InputPortOrControl<JSType = any> {
   label: string;
 }
 
-type OutputPortType = GLSLDataType | "dynamicVec";
+type OutputPortType = GLSLDataType | "dynamic";
 
 interface OutputPort {
   id: string;
@@ -76,8 +83,9 @@ interface OutputPort {
   label: string;
 }
 
-type OutputPortTypeToGLSLTypes<T extends OutputPortType> =
-  T extends "dynamicVec" ? "float" | "vec3" : T;
+type OutputPortTypeToGLSLTypes<T extends OutputPortType> = T extends "dynamic"
+  ? "float" | "vec3"
+  : T;
 
 export type ShaderNodeData<
   Inputs extends InputPortOrControl[] = InputPortOrControl[],
@@ -92,6 +100,9 @@ export type ShaderNodeData<
       Output["type"]
     >;
   };
+  concreteTypes?: {
+    [key: string]: GLSLDataType;
+  };
 };
 
 interface EmitCodeArgs<
@@ -102,14 +113,16 @@ interface EmitCodeArgs<
   vars: Record<Inputs[number]["id"] | Outputs[number]["id"], string>;
 }
 
-type EmittedCode = {
-  fnSource: string;
-  fnCall?: string;
-  requiredVaryings?: string[];
-} | {
-  assignment: string;
-  requiredVaryings?: string[];
-}
+type EmittedCode =
+  | {
+      fnSource: string;
+      fnCall?: string;
+      requiredVaryings?: string[];
+    }
+  | {
+      assignment: string;
+      requiredVaryings?: string[];
+    };
 
 interface ShaderNodeType<
   Inputs extends InputPortOrControl[],
@@ -121,7 +134,10 @@ interface ShaderNodeType<
   emitCode: (args: EmitCodeArgs<Inputs, Outputs>) => EmittedCode;
 }
 
-export type ShaderNodeTypeInstance = ShaderNodeType<InputPortOrControl[], OutputPort[]>
+export type ShaderNodeTypeInstance = ShaderNodeType<
+  InputPortOrControl[],
+  OutputPort[]
+>;
 
 export type ShaderNode = Node<ShaderNodeData>;
 

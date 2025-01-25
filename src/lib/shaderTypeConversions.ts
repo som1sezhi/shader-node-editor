@@ -1,3 +1,5 @@
+import { DynamicDataType, GLSLDataType } from "./types";
+
 export const typeConversions: Record<string, (expr: string) => string> = {
   float_vec2: (expr) => `vec2(${expr})`,
   float_vec3: (expr) => `vec3(${expr})`,
@@ -13,12 +15,20 @@ export const typeConversions: Record<string, (expr: string) => string> = {
   vec4_vec3: (expr) => `(${expr}).xyz`,
 };
 
-export function canConvert(type1: string, type2: string) {
+export function canConvert(
+  type1: GLSLDataType,
+  type2: GLSLDataType | DynamicDataType
+) {
+  if (type2 === "dynamic")
+    return ["float", "vec2", "vec3", "vec4"].includes(type1);
   return type1 === type2 || type1 + "_" + type2 in typeConversions;
 }
 
-export function convertExprType(expr: string, type1: string, type2: string) {
-  if (type1 === type2)
-    return expr;
+export function convertExprType(
+  expr: string,
+  type1: GLSLDataType,
+  type2: GLSLDataType
+) {
+  if (type1 === type2) return expr;
   return typeConversions[type1 + "_" + type2](expr);
 }

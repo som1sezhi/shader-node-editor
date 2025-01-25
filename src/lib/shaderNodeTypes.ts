@@ -67,6 +67,30 @@ void node_mix(vec3 a, vec3 b, out vec3 o) {
     },
   }),
 
+  math: typeCheckShaderNode({
+    name: "Math",
+    inputs: [
+      { id: "op", type: inputTypes.MATH_OP, label: "" },
+      { id: "a", type: inputTypes.DYNAMIC, label: "A" },
+      { id: "b", type: inputTypes.DYNAMIC, label: "B" },
+    ] as const,
+    outputs: [{ id: "out", type: "dynamic", label: "Out" }] as const,
+
+    emitCode({ nodeData, vars }) {
+      const ops = {
+        add: "+",
+        sub: "-",
+        mul: "*",
+        div: "/",
+      };
+      return {
+        assignment: /* glsl */ `${vars.out} = ${vars.a} ${
+          ops[nodeData.inputValues.op]
+        } ${vars.b};`,
+      };
+    },
+  }),
+
   fragmentOutput: typeCheckShaderNode({
     name: "Fragment Output",
     inputs: [{ id: "color", type: inputTypes.COLOR, label: "Color" }] as const,

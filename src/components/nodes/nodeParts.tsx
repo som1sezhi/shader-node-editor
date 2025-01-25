@@ -5,7 +5,7 @@ const typeToColor = {
   float: "bg-gray-400",
   vec2: "bg-lime-400",
   vec3: "bg-yellow-400",
-  dynamicVec: "bg-blue-400",
+  dynamic: "bg-blue-400",
 };
 
 export type HandleDataType = keyof typeof typeToColor;
@@ -100,10 +100,12 @@ interface OutputRowProps {
 export function InputRow({ id, label, handleType, children }: InputRowProps) {
   return (
     <Fragment>
-      <NodeRow>
-        {handleType ? <InputHandle id={id} handleType={handleType} /> : null}
-        <label htmlFor={id}>{label}</label>
-      </NodeRow>
+      {handleType || label ? (
+        <NodeRow>
+          {handleType ? <InputHandle id={id} handleType={handleType} /> : null}
+          <label htmlFor={id}>{label}</label>
+        </NodeRow>
+      ) : null}
       {children ? <NodeRow>{children}</NodeRow> : null}
     </Fragment>
   );
