@@ -13,6 +13,7 @@ import {
   SubMenu as SubMenuInner,
 } from "@szhsin/react-menu";
 import { PropsWithChildren, RefObject, useCallback } from "react";
+import { createPortal } from "react-dom";
 // import "@szhsin/react-menu/dist/index.css";
 
 function Chevron() {
@@ -42,9 +43,9 @@ const menuItemClass = ({
   hover: boolean;
   submenu?: boolean;
 }) =>
-  `whitespace-nowrap inline-block px-2 py-0.5 ${
-    hover && "bg-gray-200"
-  } ${submenu && "flex items-center"}`;
+  `whitespace-nowrap inline-block px-3 py-0.5 ${hover && "bg-gray-200"} ${
+    submenu && "flex items-center"
+  }`;
 
 function MenuItem({ value, label }: { value: string; label: string }) {
   return (
@@ -66,7 +67,7 @@ function SubMenu({
       label={
         <>
           <span className="flex-grow">{label}</span>
-          <span className="-mr-1.5 opacity-30">
+          <span className="-mr-2.5 opacity-30">
             <Chevron />
           </span>
         </>
@@ -127,7 +128,8 @@ export default function ContextMenu({
     },
     [onItemClick]
   );
-  return (
+
+  const menuDOM = (
     <ControlledMenu
       anchorRef={anchorRef}
       anchorPoint={anchorPoint}
@@ -146,4 +148,6 @@ export default function ContextMenu({
       ))}
     </ControlledMenu>
   );
+
+  return createPortal(menuDOM, document.body);
 }
