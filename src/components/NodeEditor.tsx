@@ -15,30 +15,34 @@ import {
 
 import { ShaderNode as ShaderNodeComponent } from "./nodes/ShaderNode";
 import { useStoreActions, useEdgeStore, useNodeStore } from "@/lib/store";
-import { useCallback, useRef } from "react";
-import { shaderNodeTypes } from "@/lib/shaderNodeTypes";
 import {
-  ShaderNode,
-} from "@/lib/types";
+  MouseEvent as ReactMouseEvent,
+  useCallback,
+  useRef,
+  useState,
+} from "react";
+import { ShaderNode } from "@/lib/types";
 import { canConvert } from "@/lib/shaderTypeConversions";
 import { getSourceAndTargetDataTypes } from "@/lib/utils";
+import ContextMenu, { ContextMenuProps } from "./ContextMenu";
+import { useClick } from "@szhsin/react-menu";
+
+function Plus() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 20 20"
+      fill="currentColor"
+      className="size-5"
+    >
+      <path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" />
+    </svg>
+  );
+}
 
 const nodeTypes: NodeTypes = {
   ShaderNode: ShaderNodeComponent,
 };
-
-// function glslTypeToInitValue(glslDataType: GLSLDataType) {
-//   switch (glslDataType) {
-//     case "float":
-//       return 0;
-//     case "vec2":
-//       return [0, 0];
-//     case "vec3":
-//       return [0, 0, 0];
-//     default:
-//       assert(false);
-//   }
-// }
 
 export default function NodeEditor() {
   const nodes = useNodeStore();
@@ -50,115 +54,9 @@ export default function NodeEditor() {
     onReconnect,
     addNode,
     deleteEdge,
-    compile,
   } = useStoreActions();
-  const { getNodes, getEdges, getNode } =
-    useReactFlow();
+  const { getNodes, getEdges, getNode } = useReactFlow();
   const updateNodeInternals = useUpdateNodeInternals();
-
-  /*
-  const updateDynamicTypes = useCallback(
-    (targetIds: string[]) => {
-      const stack = targetIds;
-      while (stack.length > 0) {
-        const nodeId = stack.pop()!;
-        const node = getNode(nodeId) as ShaderNode;
-        assert(node !== undefined);
-        console.log("updating", nodeId);
-        const shaderNodeType = shaderNodeTypes[node.data.nodeType];
-        // check if there are even any dynamic ports on this node
-        if (
-          shaderNodeType.inputs.every((inp) => inp.type.kind !== "dynamicPort")
-        )
-          continue;
-
-        const idToInputType = new Map<string, DynamicInputPortType<unknown>>();
-        const inputTypeToConnectedTypes = new Map<
-          DynamicInputPortType<unknown>,
-          GLSLDataType[]
-        >();
-        // initialization
-        for (const input of shaderNodeType.inputs) {
-          if (input.type.kind === "dynamicPort") {
-            idToInputType.set(input.id, input.type);
-            inputTypeToConnectedTypes.set(input.type, []);
-          }
-        }
-        // for each connection to dynamic input ports, get the source output type
-        // and collect it under the corresponding entry in inputTypeToConnectedTypes
-        const incomingConns = getHandleConnections({
-          type: "target",
-          nodeId,
-        });
-        for (const conn of incomingConns) {
-          const inputType = idToInputType.get(conn.targetHandle!);
-          if (inputType !== undefined) {
-            const source = getNode(conn.source) as ShaderNode;
-            const sourceOutputType =
-              source.data.outputTypes[conn.sourceHandle!];
-            inputTypeToConnectedTypes.get(inputType)!.push(sourceOutputType);
-          }
-        }
-        console.log(incomingConns);
-        // determine the concrete type for each dynamic input port type
-        const newConcreteTypes: Record<string, GLSLDataType> = {};
-        for (const [
-          inputType,
-          connectedTypes,
-        ] of inputTypeToConnectedTypes.entries()) {
-          newConcreteTypes[inputType.key] =
-            inputType.decideConcreteType(connectedTypes);
-        }
-        // update input control values based on updated concrete types
-        for (const inp of shaderNodeType.inputs) {
-          if (inp.type.kind === "dynamicPort") {
-            const concreteType = newConcreteTypes[inp.type.key];
-            assert(concreteType !== undefined);
-            assert(node.data.concreteTypes?.[inp.type.key] !== undefined);
-            if (node.data.concreteTypes[inp.type.key] !== concreteType)
-              updateNodeData(nodeId, {
-                inputValues: {
-                  ...node.data.inputValues,
-                  [inp.id]: glslTypeToInitValue(concreteType),
-                },
-              });
-          }
-        }
-        // update concrete types
-        updateNodeData(nodeId, { concreteTypes: newConcreteTypes });
-        // update output types
-        const newOutputTypes = { ...node.data.outputTypes };
-        let needsChange = false;
-        for (const output of shaderNodeType.outputs) {
-          if (
-            output.type === "dynamic" &&
-            newConcreteTypes.dynamic !== newOutputTypes[output.id]
-          ) {
-            needsChange = true;
-            newOutputTypes[output.id] = newConcreteTypes.dynamic;
-          }
-        }
-        if (needsChange) {
-          updateNodeData(nodeId, { outputTypes: newOutputTypes });
-          // we changed our output type; let other dynamic ports down
-          // the node graph know about this
-          const outgoingConns = getHandleConnections({
-            type: "source",
-            nodeId,
-          });
-          const outgoingNeighs = new Set<string>();
-          for (const conn of outgoingConns)
-            outgoingNeighs.add(conn.target);
-          for (const neigh of outgoingNeighs)
-            stack.push(neigh);
-          // TODO: remove edges that become incompatible with the new
-          // output type (will that ever be possible?)
-        }
-        console.log("update end", newConcreteTypes, newOutputTypes);
-      }
-    },
-    [getHandleConnections, getNode, updateNodeData]
-  );*/
 
   const onConnectCallback: OnConnect = useCallback(
     (connection) => {
@@ -238,6 +136,35 @@ export default function NodeEditor() {
     [getNodes, getEdges, getNode]
   );
 
+  const [menu, setMenu] = useState<ContextMenuProps>({
+    isOpen: false,
+    anchorPoint: { x: 0, y: 0 },
+    onClose: () => {
+      setMenu((menu) => ({ ...menu, isOpen: false }));
+    },
+    onItemClick: (value: string) => addNode(value),
+  });
+  const onPaneContextMenu = useCallback((e: MouseEvent | ReactMouseEvent) => {
+    e.preventDefault();
+    setMenu((menu) => ({
+      ...menu,
+      isOpen: true,
+      anchorRef: undefined,
+      anchorPoint: { x: e.clientX, y: e.clientY },
+    }));
+  }, []);
+  const menuAnchorProps = useClick(menu.isOpen, (isOpen, e) => {
+    // for some reason e.currentTarget can be null by the time the updater
+    // function runs, so we store the target in this closure instead
+    const target = e.currentTarget;
+    setMenu((menu) => ({
+      ...menu,
+      isOpen,
+      anchorRef: { current: target },
+      anchorPoint: undefined,
+    }));
+  });
+
   return (
     <ReactFlow
       nodes={nodes}
@@ -249,26 +176,19 @@ export default function NodeEditor() {
       onReconnectStart={onReconnectStart}
       onReconnectEnd={onReconnectEnd}
       isValidConnection={isValidConnection}
+      onPaneContextMenu={onPaneContextMenu}
       nodeTypes={nodeTypes}
       fitView
     >
-      <Panel position="top-right">
-        {Object.entries(shaderNodeTypes).map(([key, type]) => (
-          <button
-            className="bg-slate-300 rounded-md px-1 mr-1"
-            key={key}
-            onClick={() => addNode(key as keyof typeof shaderNodeTypes)}
-          >
-            {type.name}
-          </button>
-        ))}
+      <Panel position="top-left">
         <button
-          className="bg-green-300 rounded-md px-1"
-          onClick={() => compile()}
+          className="bg-blue-600 text-white rounded-md py-1 px-2 shadow-md flex flex-row items-center"
+          {...menuAnchorProps}
         >
-          Compile
+          <span className="mr-1"><Plus /></span> Add node
         </button>
       </Panel>
+      <ContextMenu {...menu} />
       <Background />
     </ReactFlow>
   );

@@ -8,7 +8,9 @@ const varyings = {
 
 export const OUTPUT_NODE_TYPE = "fragmentOutput";
 
-export const shaderNodeTypes: Record<string, ShaderNodeTypeInstance> = {
+export type ShaderNodeTypes = Record<string, ShaderNodeTypeInstance>;
+
+export const inputNodeTypes: ShaderNodeTypes = {
   normal: typeCheckShaderNode({
     name: "Normal",
     inputs: [] as const,
@@ -48,49 +50,9 @@ export const shaderNodeTypes: Record<string, ShaderNodeTypeInstance> = {
       };
     },
   }),
+};
 
-  mix: typeCheckShaderNode({
-    name: "Mix",
-    inputs: [
-      { id: "in1", type: inputTypes.COLOR, label: "Color 1" },
-      { id: "in2", type: inputTypes.COLOR, label: "Color 2" },
-    ] as const,
-    outputs: [{ id: "out", type: "vec3", label: "Output" }] as const,
-
-    emitCode() {
-      return {
-        fnSource: /* glsl */ `
-void node_mix(vec3 a, vec3 b, out vec3 o) {
-  o = (a + b) * 0.5;
-}`,
-      };
-    },
-  }),
-
-  math: typeCheckShaderNode({
-    name: "Math",
-    inputs: [
-      { id: "op", type: inputTypes.MATH_OP, label: "" },
-      { id: "a", type: inputTypes.DYNAMIC, label: "A" },
-      { id: "b", type: inputTypes.DYNAMIC, label: "B" },
-    ] as const,
-    outputs: [{ id: "out", type: "dynamic", label: "Out" }] as const,
-
-    emitCode({ nodeData, vars }) {
-      const ops = {
-        add: "+",
-        sub: "-",
-        mul: "*",
-        div: "/",
-      };
-      return {
-        assignment: /* glsl */ `${vars.out} = ${vars.a} ${
-          ops[nodeData.inputValues.op]
-        } ${vars.b};`,
-      };
-    },
-  }),
-
+export const outputNodeTypes: ShaderNodeTypes = {
   fragmentOutput: typeCheckShaderNode({
     name: "Fragment Output",
     inputs: [{ id: "color", type: inputTypes.COLOR, label: "Color" }] as const,
@@ -102,4 +64,121 @@ void node_mix(vec3 a, vec3 b, out vec3 o) {
       };
     },
   }),
+};
+
+export const mathNodeTypes: ShaderNodeTypes = {
+  split: typeCheckShaderNode({
+    name: "Split Components",
+    inputs: [
+      { id: "input", type: inputTypes.DYNAMIC, label: "Vector" },
+    ] as const,
+    outputs: [
+      { id: "x", type: "float", label: "X" },
+      { id: "y", type: "float", label: "Y" },
+      { id: "z", type: "float", label: "Z" },
+      { id: "w", type: "float", label: "W" },
+    ] as const,
+    emitCode({ nodeData, vars }) {
+      switch (nodeData.concreteTypes!.dynamic) {
+        case "float":
+          return {
+            assignment: /* glsl */ `${vars.x} = ${vars.input};
+${vars.y} = 0.0;
+${vars.z} = 0.0;
+${vars.w} = 0.0;`,
+          };
+        case "vec2":
+          return {
+            assignment: /* glsl */ `${vars.x} = ${vars.input}.x;
+${vars.y} = ${vars.input}.y;
+${vars.z} = 0.0;
+${vars.w} = 0.0;`,
+          };
+        case "vec3":
+          return {
+            assignment: /* glsl */ `${vars.x} = ${vars.input}.x;
+${vars.y} = ${vars.input}.y;
+${vars.z} = ${vars.input}.z;
+${vars.w} = 0.0;`,
+          };
+        default:
+          const exhaustiveCheck: never = nodeData.concreteTypes!.dynamic;
+          throw new Error(`Unhandled type ${exhaustiveCheck}`);
+      }
+    },
+  }),
+
+  mix: typeCheckShaderNode({
+    name: "Mix",
+    inputs: [
+      { id: "fac", type: inputTypes.FLOAT, label: "Factor" },
+      { id: "in1", type: inputTypes.COLOR, label: "Color 1" },
+      { id: "in2", type: inputTypes.COLOR, label: "Color 2" },
+    ] as const,
+    outputs: [{ id: "out", type: "vec3", label: "Output" }] as const,
+
+    emitCode() {
+      return {
+        fnSource: /* glsl */ `
+void node_mix(float fac, vec3 a, vec3 b, out vec3 o) {
+  o = a + (b - a) * fac;
+}`,
+      };
+    },
+  }),
+
+  binaryFunc: typeCheckShaderNode({
+    name: "Math",
+    inputs: [
+      { id: "op", type: inputTypes.MATH_OP, label: "" },
+      { id: "a", type: inputTypes.DYNAMIC, label: "A" },
+      { id: "b", type: inputTypes.DYNAMIC, label: "B" },
+    ] as const,
+    outputs: [{ id: "out", type: "dynamic", label: "Out" }] as const,
+
+    emitCode({ nodeData, vars }) {
+      const opExp = (op: string) => ({
+        assignment: /* glsl */ `${vars.out} = ${vars.a} ${op} ${vars.b};`,
+      });
+      const compareExp = (func: string) => ({
+        assignment: /* glsl */ `${vars.out} = ${
+          nodeData.concreteTypes!.dynamic
+        }(${func}(${vars.a}, ${vars.b}));`,
+      });
+      const assignExp = (expr: string) => ({
+        assignment: /* glsl */ `${vars.out} = ${expr};`,
+      });
+      switch (nodeData.inputValues.op) {
+        case "add":
+          return opExp("+");
+        case "sub":
+          return opExp("-");
+        case "mul":
+          return opExp("*");
+        case "div":
+          return opExp("/");
+        case "pow":
+          return assignExp(`pow(${vars.a}, ${vars.b})`);
+        case "log":
+          return assignExp(`log(${vars.a}) / log(${vars.b})`);
+        case "lt":
+          return compareExp("lessThan");
+        case "leq":
+          return compareExp("lessThanEqual");
+        case "gt":
+          return compareExp("greaterThan");
+        case "geq":
+          return compareExp("greaterThanEqual");
+        default:
+          const exhaustiveCheck: never = nodeData.inputValues.op;
+          throw new Error(`Unhandled operation ${exhaustiveCheck}`);
+      }
+    },
+  }),
+};
+
+export const shaderNodeTypes: ShaderNodeTypes = {
+  ...inputNodeTypes,
+  ...outputNodeTypes,
+  ...mathNodeTypes,
 };

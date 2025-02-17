@@ -26,7 +26,15 @@ function FloatInput({
     },
     [onChange]
   );
-  return <input className="px-1 py-0.5 rounded-sm w-28" type="number" step={0.01} value={value} onChange={callback} />;
+  return (
+    <input
+      className="px-1 py-0.5 rounded-sm w-28 nodrag"
+      type="number"
+      step={0.01}
+      value={value}
+      onChange={callback}
+    />
+  );
 }
 
 function Vec2Input({
@@ -76,8 +84,19 @@ function Vec3Input({
   );
 }
 
-function FloatInputPort() {
-  return <div>float component</div>;
+const FloatInputPort: InputPortOrControlComponent<number> = ({
+  id,
+  label,
+  handleType,
+  value,
+  onChange,
+}) => {
+  const connections = useHandleConnections({ type: "target", id });
+  return <InputRow id={id} label={label} handleType={handleType}>
+  {connections.length == 0 ? (
+    <FloatInput value={value} onChange={onChange} />
+  ) : null}
+</InputRow>
 }
 
 function Vec3InputPort() {
@@ -163,7 +182,20 @@ const ColorOutputControl: InputPortOrControlComponent<Vec3> = ({
   );
 };
 
-type MathOp = "add" | "sub" | "mul" | "div";
+const mathOps = [
+  ["add", "Add"],
+  ["sub", "Subtract"],
+  ["mul", "Multiply"],
+  ["div", "Divide"],
+  ["pow", "Power"],
+  ["log", "Log"],
+  ["lt", "Less Than"],
+  ["leq", "Less or Equal"],
+  ["gt", "Greater Than"],
+  ["geq", "Greater or Equal"],
+] as const;
+
+type MathOp = (typeof mathOps)[number][0];
 const MathOpControl: InputPortOrControlComponent<MathOp> = ({
   id,
   label,
@@ -179,11 +211,16 @@ const MathOpControl: InputPortOrControlComponent<MathOp> = ({
   );
   return (
     <InputRow id={id} label={label} handleType={handleType}>
-      <select className="w-full px-1 py-0.5 rounded-sm" value={value} onChange={callback}>
-        <option value="add">Add</option>
-        <option value="sub">Subtract</option>
-        <option value="mul">Multiply</option>
-        <option value="div">Divide</option>
+      <select
+        className="w-full px-1 py-0.5 rounded-sm"
+        value={value}
+        onChange={callback}
+      >
+        {mathOps.map(([value, label]) => (
+          <option value={value} key={value}>
+            {label}
+          </option>
+        ))}
       </select>
     </InputRow>
   );
