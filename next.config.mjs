@@ -1,7 +1,9 @@
 // import type { NextConfig } from "next";
 
 const nextConfig = {
-  /* config options here */
+  basePath: "/shader-node-editor",
+  output: "export",
+  reactStrictMode: true,
 };
 
 export default nextConfig;
