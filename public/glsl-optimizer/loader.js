@@ -73,7 +73,7 @@ var Module = {
     );
   },
   locateFile: function (hoho) {
-    return "/glsl-optimizer/glsl-optimizer.js.mem";
+    return "shader-node-editor/glsl-optimizer/glsl-optimizer.js.mem";
   },
 };
 

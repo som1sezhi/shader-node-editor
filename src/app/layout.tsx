@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Noto_Sans } from "next/font/google";
 import "@xyflow/react/dist/style.css";
 import "./globals.css";
-import Script from "next/script";
 
 const noto = Noto_Sans({
   weight: "400",
@@ -26,8 +25,6 @@ export default function RootLayout({
       </head>*/}
       <body className={`${noto.className} antialiased`}>
         {children}
-        <Script src="glsl-optimizer/loader.js" strategy="beforeInteractive" />
-        <Script src="glsl-optimizer/glsl-optimizer.js" />
       </body>
     </html>
   );
