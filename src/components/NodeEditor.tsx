@@ -26,6 +26,7 @@ import { canConvert } from "@/lib/shaderTypeConversions";
 import { getSourceAndTargetDataTypes } from "@/lib/utils";
 import ContextMenu, { ContextMenuProps } from "./ContextMenu";
 import { useClick } from "@szhsin/react-menu";
+import HelpModal from "./HelpModal";
 
 function Plus() {
   return (
@@ -185,8 +186,11 @@ export default function NodeEditor() {
           className="bg-blue-600 text-white rounded-md py-1 px-2 shadow-md flex flex-row items-center"
           {...menuAnchorProps}
         >
-          <span className="mr-1"><Plus /></span> Add node
+          <span className="mr-1"><Plus /></span> Add Node
         </button>
+      </Panel>
+      <Panel position="top-right">
+        <HelpModal />
       </Panel>
       <ContextMenu {...menu} />
       <Background />
