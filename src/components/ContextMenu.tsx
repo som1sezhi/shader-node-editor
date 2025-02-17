@@ -12,7 +12,7 @@ import {
   MenuItem as MenuItemInner,
   SubMenu as SubMenuInner,
 } from "@szhsin/react-menu";
-import { PropsWithChildren, RefObject, useCallback } from "react";
+import { PropsWithChildren, RefObject, useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 // import "@szhsin/react-menu/dist/index.css";
 
@@ -33,8 +33,10 @@ function Chevron() {
   );
 }
 
+// TODO: figure out how to fix issue with focus-visible activating on mouse
+// on initial page load without just disabling outline
 const menuClass =
-  "flex flex-col z-50 bg-white border shadow-md select-none min-w-[8rem] rounded-md py-1";
+  "flex flex-col z-50 bg-white border shadow-md select-none min-w-[8rem] rounded-md py-1 outline-none";
 
 const menuItemClass = ({
   hover,
@@ -43,7 +45,7 @@ const menuItemClass = ({
   hover: boolean;
   submenu?: boolean;
 }) =>
-  `whitespace-nowrap inline-block px-3 py-0.5 ${hover && "bg-gray-200"} ${
+  `whitespace-nowrap inline-block px-3 py-0.5 outline-none ${hover && "bg-gray-200"} ${
     submenu && "flex items-center"
   }`;
 
@@ -129,6 +131,14 @@ export default function ContextMenu({
     [onItemClick]
   );
 
+  // https://github.com/vercel/next.js/tree/canary/examples/with-portals
+  const ref = useRef<Element>();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    ref.current = document.body;
+    setMounted(true);
+  }, []);
+
   const menuDOM = (
     <ControlledMenu
       anchorRef={anchorRef}
@@ -149,5 +159,5 @@ export default function ContextMenu({
     </ControlledMenu>
   );
 
-  return createPortal(menuDOM, document.body);
+  return mounted ? createPortal(menuDOM, ref.current!) : null;
 }

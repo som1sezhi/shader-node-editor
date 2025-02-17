@@ -1,3 +1,5 @@
+"use client";
+
 import {
   Background,
   Edge,
@@ -26,7 +28,8 @@ import { canConvert } from "@/lib/shaderTypeConversions";
 import { getSourceAndTargetDataTypes } from "@/lib/utils";
 import ContextMenu, { ContextMenuProps } from "./ContextMenu";
 import { useClick } from "@szhsin/react-menu";
-import HelpModal from "./HelpModal";
+import Modal from "./Modal";
+import { QuestionMarkCircledIcon } from "@radix-ui/react-icons";
 
 function Plus() {
   return (
@@ -38,6 +41,37 @@ function Plus() {
     >
       <path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" />
     </svg>
+  );
+}
+
+function HelpModal() {
+  return (
+    <Modal>
+      <Modal.Trigger asChild>
+        <button
+          aria-label="Help"
+          className="p-1.5 -mt-0.5 -mr-0.5 bg-gray-100 shadow-md rounded-full flex align-middle justify-center"
+        >
+          <QuestionMarkCircledIcon width="1.5rem" height="1.5rem" />
+        </button>
+      </Modal.Trigger>
+      <Modal.Content title="Help">
+        <div className="mt-6 mb-4 flex flex-col gap-6">
+          <p>
+            Add new nodes using the <b>Add Node</b> button in the top-left, or
+            by right-clicking the canvas. A <b>Fragment Output</b> node must be
+            present in order to see any output in the preview pane. Otherwise,
+            the preview mesh will show up as solid magenta.
+          </p>
+          <p>
+            You can select nodes by clicking on them. Addtionally, you can
+            select multiple nodes by holding <b>Ctrl</b> while clicking, or by
+            holding <b>Shift</b> while dragging (box select). Press
+            <b>Backspace</b> to delete selected nodes.
+          </p>
+        </div>
+      </Modal.Content>
+    </Modal>
   );
 }
 
