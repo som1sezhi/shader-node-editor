@@ -1,9 +1,10 @@
-// import type { NextConfig } from "next";
-
+/**
+ * @type {import('next').NextConfig}
+ */
 const nextConfig = {
   basePath: "/shader-node-editor",
   output: "export",
   reactStrictMode: true,
 };
 
-export default nextConfig;
+module.exports = nextConfig;
