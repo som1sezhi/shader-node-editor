@@ -27,7 +27,10 @@ export default function Home() {
           </Allotment.Pane>
         </Allotment>
       </div>
-      <Script src="shader-node-editor/glsl-optimizer/loader.js" strategy="beforeInteractive" />
+      <Script
+        src="shader-node-editor/glsl-optimizer/loader.js"
+        strategy="beforeInteractive"
+      />
       <Script src="shader-node-editor/glsl-optimizer/glsl-optimizer.js" />
     </Fragment>
   );
