@@ -28,10 +28,10 @@ export default function Home() {
         </Allotment>
       </div>
       <Script
-        src="shader-node-editor/glsl-optimizer/loader.js"
+        src="/shader-node-editor/glsl-optimizer/loader.js"
         strategy="beforeInteractive"
       />
-      <Script src="shader-node-editor/glsl-optimizer/glsl-optimizer.js" />
+      <Script src="/shader-node-editor/glsl-optimizer/glsl-optimizer.js" />
     </Fragment>
   );
 }
