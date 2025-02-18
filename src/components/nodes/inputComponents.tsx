@@ -224,12 +224,16 @@ const mathOps = [
   ["sub", "Subtract"],
   ["mul", "Multiply"],
   ["div", "Divide"],
+  ["mod", "Modulo"],
   ["pow", "Power"],
   ["log", "Log"],
+  ["atan2", "Arctan2"],
   ["lt", "Less Than"],
   ["leq", "Less or Equal"],
   ["gt", "Greater Than"],
   ["geq", "Greater or Equal"],
+  ["min", "Minumum"],
+  ["max", "Maximum"],
 ] as const;
 
 type MathOp = (typeof mathOps)[number][0];
@@ -263,6 +267,56 @@ const MathOpControl: InputPortOrControlComponent<MathOp> = ({
   );
 };
 
+const unaryMathOps = [
+  ["neg", "Negate"],
+  ["sqrt", "Square Root"],
+  ["inversesqrt", "Inverse Sqrt"],
+  ["exp", "Exp"],
+  ["log", "Ln"],
+  ["abs", "Absolute"],
+  ["round", "Round"],
+  ["floor", "Floor"],
+  ["ceil", "Ceil"],
+  ["fract", "Fraction"],
+  ["sin", "Sine"],
+  ["cos", "Cosine"],
+  ["tan", "Tangent"],
+  ["asin", "Arcsine"],
+  ["acos", "Arccosine"],
+  ["atan", "Arctangent"],
+] as const;
+
+type UnaryMathOp = (typeof unaryMathOps)[number][0];
+const UnaryMathOpControl: InputPortOrControlComponent<UnaryMathOp> = ({
+  id,
+  label,
+  handleType,
+  value,
+  onChange,
+}) => {
+  const callback = useCallback(
+    (e: ChangeEvent<HTMLSelectElement>) => {
+      onChange(e.target.value as UnaryMathOp);
+    },
+    [onChange]
+  );
+  return (
+    <InputRow id={id} label={label} handleType={handleType}>
+      <select
+        className="w-full px-1 py-0.5 rounded-sm"
+        value={value}
+        onChange={callback}
+      >
+        {unaryMathOps.map(([value, label]) => (
+          <option value={value} key={value}>
+            {label}
+          </option>
+        ))}
+      </select>
+    </InputRow>
+  );
+};
+
 export const inputTypes: {
   FLOAT: InputPortType<number>;
   VEC3: InputPortType<Vec3>;
@@ -273,6 +327,7 @@ export const inputTypes: {
   VEC3_OUTPUT_CONTROL: OutputControlType<Vec3>;
   COLOR_OUTPUT_CONTROL: OutputControlType<Vec3>;
   MATH_OP: ControlType<MathOp>;
+  UNARY_MATH_OP: ControlType<UnaryMathOp>;
 } = {
   FLOAT: {
     kind: "port",
@@ -338,5 +393,10 @@ export const inputTypes: {
     kind: "control",
     component: MathOpControl,
     defaultValue: "add",
+  },
+  UNARY_MATH_OP: {
+    kind: "control",
+    component: UnaryMathOpControl,
+    defaultValue: "neg",
   },
 } as const;

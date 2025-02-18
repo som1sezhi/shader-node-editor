@@ -207,6 +207,9 @@ void node_mix(float fac, vec3 a, vec3 b, out vec3 o) {
           nodeData.concreteTypes!.dynamic
         }(${func}(${vars.a}, ${vars.b}));`,
       });
+      const funcExp = (func: string) => ({
+        assignment: /* glsl */ `${vars.out} = ${func}(${vars.a}, ${vars.b});`,
+      });
       const assignExp = (expr: string) => ({
         assignment: /* glsl */ `${vars.out} = ${expr};`,
       });
@@ -219,10 +222,14 @@ void node_mix(float fac, vec3 a, vec3 b, out vec3 o) {
           return opExp("*");
         case "div":
           return opExp("/");
+        case "mod":
+          return funcExp("mod");
         case "pow":
-          return assignExp(`pow(${vars.a}, ${vars.b})`);
+          return funcExp("pow");
         case "log":
           return assignExp(`log(${vars.a}) / log(${vars.b})`);
+        case "atan2":
+          return funcExp("atan");
         case "lt":
           return compareExp("lessThan");
         case "leq":
@@ -231,6 +238,52 @@ void node_mix(float fac, vec3 a, vec3 b, out vec3 o) {
           return compareExp("greaterThan");
         case "geq":
           return compareExp("greaterThanEqual");
+        case "min":
+          return funcExp("min");
+        case "max":
+          return funcExp("max");
+        default:
+          const exhaustiveCheck: never = nodeData.inputValues.op;
+          throw new Error(`Unhandled operation ${exhaustiveCheck}`);
+      }
+    },
+  }),
+
+  unaryFunc: typeCheckShaderNode({
+    name: "Math (Unary)",
+    inputs: [
+      { id: "op", type: inputTypes.UNARY_MATH_OP, label: "" },
+      { id: "in", type: inputTypes.DYNAMIC, label: "In" },
+    ] as const,
+    outputs: [{ id: "out", type: "dynamic", label: "Out" }] as const,
+
+    emitCode({ nodeData, vars }) {
+      const funcExp = (func: string) => ({
+        assignment: /* glsl */ `${vars.out} = ${func}(${vars.in});`,
+      });
+      const assignExp = (expr: string) => ({
+        assignment: /* glsl */ `${vars.out} = ${expr};`,
+      });
+      switch (nodeData.inputValues.op) {
+        case "neg":
+          return assignExp(`-${vars.in}`);
+        case "round":
+          return assignExp(`floor(${vars.in} + 0.5)`);
+        case "sqrt":
+        case "inversesqrt":
+        case "exp":
+        case "log":
+        case "abs":
+        case "floor":
+        case "ceil":
+        case "fract":
+        case "sin":
+        case "cos":
+        case "tan":
+        case "asin":
+        case "acos":
+        case "atan":
+          return funcExp(nodeData.inputValues.op);
         default:
           const exhaustiveCheck: never = nodeData.inputValues.op;
           throw new Error(`Unhandled operation ${exhaustiveCheck}`);
