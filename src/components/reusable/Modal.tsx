@@ -17,7 +17,7 @@ function ModalContent({
     <Dialog.Portal>
       <Dialog.Overlay className="z-50 bg-black/50 fixed inset-0 data-[state=open]:animate-[fade-in_100ms] data-[state=closed]:animate-[fade-out_100ms]" />
       <Dialog.Content
-        className="z-50 bg-white shadow-md fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10/12 max-w-[36rem] p-5 rounded-lg data-[state=open]:animate-[fade-in_100ms] data-[state=closed]:animate-[fade-out_100ms]"
+        className="z-50 bg-white shadow-md fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10/12 max-w-xl max-h-screen p-5 rounded-lg data-[state=open]:animate-[fade-in_100ms] data-[state=closed]:animate-[fade-out_100ms]"
         aria-describedby={undefined}
       >
         <div className="flex flex-row items-center justify-between">
@@ -31,7 +31,7 @@ function ModalContent({
             </button>
           </Dialog.Close>
         </div>
-        {children}
+        <div className="mt-5">{children}</div>
       </Dialog.Content>
     </Dialog.Portal>
   );

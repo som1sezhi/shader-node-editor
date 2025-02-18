@@ -12,8 +12,8 @@ import {
   MenuItem as MenuItemInner,
   SubMenu as SubMenuInner,
 } from "@szhsin/react-menu";
-import { PropsWithChildren, RefObject, useCallback, useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { PropsWithChildren, RefObject, useCallback } from "react";
+import Portal from "./reusable/Portal";
 // import "@szhsin/react-menu/dist/index.css";
 
 function Chevron() {
@@ -45,9 +45,9 @@ const menuItemClass = ({
   hover: boolean;
   submenu?: boolean;
 }) =>
-  `whitespace-nowrap inline-block px-3 py-0.5 outline-none ${hover && "bg-gray-200"} ${
-    submenu && "flex items-center"
-  }`;
+  `whitespace-nowrap inline-block px-3 py-0.5 outline-none ${
+    hover && "bg-gray-200"
+  } ${submenu && "flex items-center"}`;
 
 function MenuItem({ value, label }: { value: string; label: string }) {
   return (
@@ -131,33 +131,25 @@ export default function ContextMenu({
     [onItemClick]
   );
 
-  // https://github.com/vercel/next.js/tree/canary/examples/with-portals
-  const ref = useRef<Element>();
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    ref.current = document.body;
-    setMounted(true);
-  }, []);
-
-  const menuDOM = (
-    <ControlledMenu
-      anchorRef={anchorRef}
-      anchorPoint={anchorPoint}
-      state={isOpen ? "open" : "closed"}
-      direction="bottom"
-      onClose={onClose}
-      menuClassName={menuClass}
-      onItemClick={callback}
-    >
-      {menuItems.map((submenu) => (
-        <SubMenu key={submenu.label} label={submenu.label}>
-          {submenu.items.map((item) => (
-            <MenuItem key={item[0]} value={item[0]} label={item[1].name} />
-          ))}
-        </SubMenu>
-      ))}
-    </ControlledMenu>
+  return (
+    <Portal selector="body">
+      <ControlledMenu
+        anchorRef={anchorRef}
+        anchorPoint={anchorPoint}
+        state={isOpen ? "open" : "closed"}
+        direction="bottom"
+        onClose={onClose}
+        menuClassName={menuClass}
+        onItemClick={callback}
+      >
+        {menuItems.map((submenu) => (
+          <SubMenu key={submenu.label} label={submenu.label}>
+            {submenu.items.map((item) => (
+              <MenuItem key={item[0]} value={item[0]} label={item[1].name} />
+            ))}
+          </SubMenu>
+        ))}
+      </ControlledMenu>
+    </Portal>
   );
-
-  return mounted ? createPortal(menuDOM, ref.current!) : null;
 }

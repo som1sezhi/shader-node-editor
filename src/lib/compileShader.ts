@@ -7,7 +7,7 @@ import {
 import { OUTPUT_NODE_TYPE, shaderNodeTypes } from "./shaderNodeTypes";
 import { getSourceAndTargetDataTypes } from "./utils";
 import { convertExprType } from "./shaderTypeConversions";
-import assert from "assert";
+import { strict as assert } from "assert";
 
 export function createUniformVariableName(
   nodeId: string,
@@ -229,4 +229,22 @@ ${optFragShader}`);
     fragShader: fragShaderToUse,
     uniformsToWatch,
   };
+}
+
+function numberToGLSL(x: number) {
+  if (!Number.isFinite(x))
+    return "0.";
+  const str = x.toString();
+  return str.includes(".") ? str : str + ".";
+}
+
+export function jsValueToGLSL(jsValue: unknown) {
+  if (typeof jsValue === "number") {
+    return numberToGLSL(jsValue);
+  } else if (Array.isArray(jsValue)) {
+    assert(2 <= jsValue.length && jsValue.length <= 4);
+    const list = jsValue.map(numberToGLSL).join(", ");
+    return `vec${jsValue.length}(${list})`;
+  }
+  throw new Error(`${jsValue} cannot be converted to GLSL`);
 }

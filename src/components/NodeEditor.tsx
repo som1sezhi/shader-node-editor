@@ -16,7 +16,11 @@ import {
 } from "@xyflow/react";
 
 import { ShaderNode as ShaderNodeComponent } from "./nodes/ShaderNode";
-import { useStoreActions, useEdgeStore, useNodeStore } from "@/lib/store";
+import {
+  useStoreActions,
+  useEdgeStore,
+  useNodeStore,
+} from "@/lib/store";
 import {
   MouseEvent as ReactMouseEvent,
   useCallback,
@@ -28,8 +32,10 @@ import { canConvert } from "@/lib/shaderTypeConversions";
 import { getSourceAndTargetDataTypes } from "@/lib/utils";
 import ContextMenu, { ContextMenuProps } from "./ContextMenu";
 import { useClick } from "@szhsin/react-menu";
-import Modal from "./Modal";
+import Modal from "./reusable/Modal";
 import { QuestionMarkCircledIcon } from "@radix-ui/react-icons";
+import { Button } from "./reusable/Button";
+import ExportModal from "./ExportModal";
 
 function Plus() {
   return (
@@ -48,15 +54,15 @@ function HelpModal() {
   return (
     <Modal>
       <Modal.Trigger asChild>
-        <button
+        <Button
           aria-label="Help"
-          className="p-1.5 -mt-0.5 -mr-0.5 bg-gray-100 shadow-md rounded-full flex align-middle justify-center"
+          className="p-1 -mt-0.5 -mr-0.5 bg-gray-100 hover:bg-gray-200 rounded-full"
         >
           <QuestionMarkCircledIcon width="1.5rem" height="1.5rem" />
-        </button>
+        </Button>
       </Modal.Trigger>
       <Modal.Content title="Help">
-        <div className="mt-6 mb-4 flex flex-col gap-6">
+        <div className="flex flex-col gap-6 pb-2">
           <p>
             Add new nodes using the <b>Add Node</b> button in the top-left, or
             by right-clicking the canvas. A <b>Fragment Output</b> node must be
@@ -66,7 +72,7 @@ function HelpModal() {
           <p>
             You can select nodes by clicking on them. Addtionally, you can
             select multiple nodes by holding <b>Ctrl</b> while clicking, or by
-            holding <b>Shift</b> while dragging (box select). Press
+            holding <b>Shift</b> while dragging (box select). Press{" "}
             <b>Backspace</b> to delete selected nodes.
           </p>
         </div>
@@ -216,14 +222,18 @@ export default function NodeEditor() {
       fitView
     >
       <Panel position="top-left">
-        <button
-          className="bg-blue-600 text-white rounded-md py-1 px-2 shadow-md flex flex-row items-center"
+        <Button
+          className="bg-blue-600 hover:bg-blue-500 text-white"
           {...menuAnchorProps}
         >
-          <span className="mr-1"><Plus /></span> Add Node
-        </button>
+          <span className="mr-1">
+            <Plus />
+          </span>
+          Add Node
+        </Button>
       </Panel>
-      <Panel position="top-right">
+      <Panel position="top-right" className="flex flex-row gap-2">
+        <ExportModal />
         <HelpModal />
       </Panel>
       <ContextMenu {...menu} />
