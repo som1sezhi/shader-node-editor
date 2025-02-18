@@ -8,7 +8,7 @@ import {
   Vec3,
 } from "@/lib/types";
 import { InputRow, NodeRow } from "./nodeParts";
-import { ChangeEvent, ChangeEventHandler, useCallback } from "react";
+import { ChangeEvent, ChangeEventHandler, useCallback, useState } from "react";
 import { hex2rgb, rgb2hex } from "@/lib/utils";
 import { useHandleConnections } from "@xyflow/react";
 import { strict as assert } from "assert";
@@ -20,9 +20,13 @@ function FloatInput({
   value: number;
   onChange: (newVal: number) => void;
 }) {
+  const [textVal, setTextVal] = useState<string>(value.toString());
   const callback: ChangeEventHandler<HTMLInputElement> = useCallback(
     (e) => {
-      onChange(parseFloat(e.target.value));
+      setTextVal(e.target.value);
+      const val = parseFloat(e.target.value);
+      if (Number.isFinite(val))
+        onChange(val);
     },
     [onChange]
   );
@@ -31,7 +35,7 @@ function FloatInput({
       className="px-1 py-0.5 rounded-sm w-28 nodrag"
       type="number"
       step={0.01}
-      value={value}
+      value={textVal}
       onChange={callback}
     />
   );
@@ -158,6 +162,39 @@ const DynamicInputPort: InputPortOrControlComponent<number | Vec2 | Vec3> = ({
   );
 };
 
+const FloatOutputControl: InputPortOrControlComponent<number> = ({
+  value,
+  onChange,
+}) => {
+  return (
+    <NodeRow>
+      <FloatInput value={value} onChange={onChange} />
+    </NodeRow>
+  );
+};
+
+const Vec2OutputControl: InputPortOrControlComponent<Vec2> = ({
+  value,
+  onChange,
+}) => {
+  return (
+    <NodeRow>
+      <Vec2Input value={value} onChange={onChange} />
+    </NodeRow>
+  );
+};
+
+const Vec3OutputControl: InputPortOrControlComponent<Vec3> = ({
+  value,
+  onChange,
+}) => {
+  return (
+    <NodeRow>
+      <Vec3Input value={value} onChange={onChange} />
+    </NodeRow>
+  );
+};
+
 const ColorOutputControl: InputPortOrControlComponent<Vec3> = ({
   value,
   onChange,
@@ -231,6 +268,9 @@ export const inputTypes: {
   VEC3: InputPortType<Vec3>;
   COLOR: InputPortType<Vec3>;
   DYNAMIC: DynamicInputPortType<number | Vec2 | Vec3>;
+  FLOAT_OUTPUT_CONTROL: OutputControlType<number>;
+  VEC2_OUTPUT_CONTROL: OutputControlType<Vec2>;
+  VEC3_OUTPUT_CONTROL: OutputControlType<Vec3>;
   COLOR_OUTPUT_CONTROL: OutputControlType<Vec3>;
   MATH_OP: ControlType<MathOp>;
 } = {
@@ -269,6 +309,24 @@ export const inputTypes: {
     key: "dynamic",
     defaultValue: 0,
     defaultConcreteType: "float",
+  },
+  FLOAT_OUTPUT_CONTROL: {
+    kind: "outputControl",
+    glslDataType: "float",
+    component: FloatOutputControl,
+    defaultValue: 0,
+  },
+  VEC2_OUTPUT_CONTROL: {
+    kind: "outputControl",
+    glslDataType: "vec2",
+    component: Vec2OutputControl,
+    defaultValue: [0, 0],
+  },
+  VEC3_OUTPUT_CONTROL: {
+    kind: "outputControl",
+    glslDataType: "vec3",
+    component: Vec3OutputControl,
+    defaultValue: [0, 0, 0],
   },
   COLOR_OUTPUT_CONTROL: {
     kind: "outputControl",

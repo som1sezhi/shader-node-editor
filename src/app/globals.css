@@ -39,35 +39,9 @@ body {
   }
 }
 
-.ToastRoot[data-state="open"] {
-	animation: slideIn 150ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-.ToastRoot[data-state="closed"] {
-	animation: hide 100ms ease-in;
-}
-.ToastRoot[data-swipe="move"] {
-	transform: translateX(var(--radix-toast-swipe-move-x));
-}
-.ToastRoot[data-swipe="cancel"] {
-	transform: translateX(0);
-	transition: transform 200ms ease-out;
-}
-.ToastRoot[data-swipe="end"] {
-	animation: swipeOut 100ms ease-out;
-}
-
-@keyframes hide {
-	from {
-		opacity: 1;
-	}
-	to {
-		opacity: 0;
-	}
-}
-
 @keyframes slide-in-from-top {
 	from {
-		transform: translateY(-100%);
+		transform: translateY(calc(-100%));
 	}
 	to {
 		transform: translateY(0);
@@ -79,6 +53,6 @@ body {
 		transform: translateY(var(--radix-toast-swipe-end-y));
 	}
 	to {
-		transform: translateY(calc(-100% - 3em));
+		transform: translateY(calc(-100% - 1.5rem));
 	}
 }

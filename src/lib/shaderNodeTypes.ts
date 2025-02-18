@@ -11,6 +11,48 @@ export const OUTPUT_NODE_TYPE = "fragmentOutput";
 export type ShaderNodeTypes = Record<string, ShaderNodeTypeInstance>;
 
 export const inputNodeTypes: ShaderNodeTypes = {
+  value: typeCheckShaderNode({
+    name: "Value",
+    inputs: [
+      { id: "value", type: inputTypes.FLOAT_OUTPUT_CONTROL, label: "Value" },
+    ] as const,
+    outputs: [{ id: "out", type: "float", label: "Value" }] as const,
+
+    emitCode({ vars }) {
+      return {
+        assignment: /* glsl */ `${vars.out} = ${vars.value};`,
+      };
+    },
+  }),
+
+  vec2: typeCheckShaderNode({
+    name: "Vec2",
+    inputs: [
+      { id: "value", type: inputTypes.VEC2_OUTPUT_CONTROL, label: "Value" },
+    ] as const,
+    outputs: [{ id: "out", type: "vec2", label: "Value" }] as const,
+
+    emitCode({ vars }) {
+      return {
+        assignment: /* glsl */ `${vars.out} = ${vars.value};`,
+      };
+    },
+  }),
+
+  vec3: typeCheckShaderNode({
+    name: "Vec3",
+    inputs: [
+      { id: "value", type: inputTypes.VEC3_OUTPUT_CONTROL, label: "Value" },
+    ] as const,
+    outputs: [{ id: "out", type: "vec3", label: "Value" }] as const,
+
+    emitCode({ vars }) {
+      return {
+        assignment: /* glsl */ `${vars.out} = ${vars.value};`,
+      };
+    },
+  }),
+
   normal: typeCheckShaderNode({
     name: "Normal",
     inputs: [] as const,
@@ -83,28 +125,48 @@ export const mathNodeTypes: ShaderNodeTypes = {
         case "float":
           return {
             assignment: /* glsl */ `${vars.x} = ${vars.input};
-${vars.y} = 0.0;
-${vars.z} = 0.0;
-${vars.w} = 0.0;`,
+  ${vars.y} = 0.0;
+  ${vars.z} = 0.0;
+  ${vars.w} = 0.0;`,
           };
         case "vec2":
           return {
             assignment: /* glsl */ `${vars.x} = ${vars.input}.x;
-${vars.y} = ${vars.input}.y;
-${vars.z} = 0.0;
-${vars.w} = 0.0;`,
+  ${vars.y} = ${vars.input}.y;
+  ${vars.z} = 0.0;
+  ${vars.w} = 0.0;`,
           };
         case "vec3":
           return {
             assignment: /* glsl */ `${vars.x} = ${vars.input}.x;
-${vars.y} = ${vars.input}.y;
-${vars.z} = ${vars.input}.z;
-${vars.w} = 0.0;`,
+  ${vars.y} = ${vars.input}.y;
+  ${vars.z} = ${vars.input}.z;
+  ${vars.w} = 0.0;`,
           };
         default:
           const exhaustiveCheck: never = nodeData.concreteTypes!.dynamic;
           throw new Error(`Unhandled type ${exhaustiveCheck}`);
       }
+    },
+  }),
+
+  combine: typeCheckShaderNode({
+    name: "Combine Components",
+    inputs: [
+      { id: "x", type: inputTypes.FLOAT, label: "X" },
+      { id: "y", type: inputTypes.FLOAT, label: "Y" },
+      { id: "z", type: inputTypes.FLOAT, label: "Z" },
+      { id: "w", type: inputTypes.FLOAT, label: "W" },
+    ] as const,
+    outputs: [
+      { id: "xy", type: "vec2", label: "XY" },
+      { id: "xyz", type: "vec3", label: "XYZ" },
+    ] as const,
+    emitCode({ vars }) {
+      return {
+        assignment: /* glsl */ `${vars.xy} = vec2(${vars.x}, ${vars.y});
+  ${vars.xyz} = vec3(${vars.x}, ${vars.y}, ${vars.z});`,
+      };
     },
   }),
 

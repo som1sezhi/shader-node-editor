@@ -36,6 +36,7 @@ interface AppState {
   edges: Edge[];
   vertShader: string;
   fragShader: string;
+  origFragShader: string;
   uniformsToWatch: Record<string, { value: unknown }>;
   actions: {
     onNodesChange: OnNodesChange;
@@ -89,7 +90,7 @@ function updateDynamicTypes(
 
   function updateNode(nodeId: string, newNode: ShaderNode) {
     newNodes[nodeIdx.get(nodeId)!] = newNode;
-    nodeLookup.set(nodeId, newNode)
+    nodeLookup.set(nodeId, newNode);
     node = newNode;
   }
 
@@ -97,7 +98,6 @@ function updateDynamicTypes(
     const nodeId = stack.pop()!;
     node = nodeLookup.get(nodeId);
     if (node === undefined) continue;
-    console.log("updating", nodeId);
     const shaderNodeType = shaderNodeTypes[node.data.nodeType];
     // check if there are even any dynamic ports on this node
     if (shaderNodeType.inputs.every((inp) => inp.type.kind !== "dynamicPort"))
@@ -126,7 +126,6 @@ function updateDynamicTypes(
         inputTypeToConnectedTypes.get(inputType)!.push(sourceOutputType);
       }
     }
-    console.log(incomingConns);
     // determine the concrete type for each dynamic input port type
     const newConcreteTypes: Record<string, GLSLDataType> = {};
     for (const [
@@ -196,7 +195,6 @@ function updateDynamicTypes(
       // TODO: remove edges that become incompatible with the new
       // output type (will that ever be possible?)
     }
-    console.log("update end", newConcreteTypes);
   }
 
   return newNodes;
@@ -209,6 +207,7 @@ const useStore = create<AppState>()((set, get) => ({
   edges: [],
   vertShader: DEFAULT_VERTEX_SHADER,
   fragShader: DEFAULT_FRAGMENT_SHADER,
+  origFragShader: DEFAULT_FRAGMENT_SHADER,
   uniformsToWatch: {},
   actions: {
     onNodesChange: (changes) => {
@@ -361,12 +360,11 @@ const useStore = create<AppState>()((set, get) => ({
 
     compile: () => {
       const { nodes, edges } = get();
-      const { fragShader, uniformsToWatch } = compileShader(
+      const { fragShader, origFragShader, uniformsToWatch } = compileShader(
         nodes as ShaderNode[],
         edges
       );
-      console.log(uniformsToWatch);
-      set({ fragShader, uniformsToWatch });
+      set({ fragShader, origFragShader, uniformsToWatch });
     },
   },
 }));
@@ -378,6 +376,7 @@ export const useShader = () =>
     useShallow((state) => ({
       vertShader: state.vertShader,
       fragShader: state.fragShader,
+      origFragShader: state.origFragShader,
       uniformsToWatch: state.uniformsToWatch,
     }))
   );

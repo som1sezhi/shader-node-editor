@@ -43,29 +43,45 @@ function CopyButton({ exportedShader }: { exportedShader: string }) {
           </Toast.Description>
         </Toast.Root>
         <Portal selector="body">
-          <Toast.Viewport className="fixed top-3 p-2 z-50 w-screen flex justify-center" />
+          <Toast.Viewport className="fixed top-3 z-50 p-2 h-14 w-screen flex justify-center" />
         </Portal>
       </Toast.Provider>
     </>
   );
 }
 
-export default function ExportModal() {
-  const { fragShader, uniformsToWatch } = useShader();
+function prepareExportedShader(
+  source: string,
+  uniformsToWatch: Record<string, { value: unknown }>
+) {
+  const allKeys = Object.keys(uniformsToWatch).join("|");
+  const regex = new RegExp(`uniform (\\w+) (${allKeys})`, "g");
+  return source
+    .replaceAll(
+      regex,
+      (_, uniformType, uniformName) =>
+        `const ${uniformType} ${uniformName} = ${jsValueToGLSL(
+          uniformsToWatch[uniformName].value
+        )}`
+    )
+    .trim();
+}
 
-  const exportedShader = useMemo(() => {
-    const allKeys = Object.keys(uniformsToWatch).join("|");
-    const regex = new RegExp(`uniform (\\w+) (${allKeys})`, "g");
-    return fragShader
-      .replaceAll(
-        regex,
-        (_, uniformType, uniformName) =>
-          `const ${uniformType} ${uniformName} = ${jsValueToGLSL(
-            uniformsToWatch[uniformName].value
-          )}`
-      )
-      .trim();
-  }, [fragShader, uniformsToWatch]);
+export default function ExportModal() {
+  const { fragShader, origFragShader, uniformsToWatch } = useShader();
+  const [optimized, setOptimized] = useState<boolean>(false);
+
+  const exportedShader = useMemo(
+    () => prepareExportedShader(origFragShader, uniformsToWatch),
+    [origFragShader, uniformsToWatch]
+  );
+
+  const exportedOptShader = useMemo(
+    () => prepareExportedShader(fragShader, uniformsToWatch),
+    [fragShader, uniformsToWatch]
+  );
+
+  const onChange = () => setOptimized(!optimized);
 
   return (
     <Modal>
@@ -75,15 +91,21 @@ export default function ExportModal() {
         </button>
       </Modal.Trigger>
       <Modal.Content title="Export to GLSL">
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-5">
+          <div>
+            <label>
+              <input type="checkbox" checked={optimized} onChange={onChange} />
+              <span className="ml-2">Use optimized code (experimental)</span>
+            </label>
+          </div>
           <SyntaxHighlighter
             language="glsl"
             style={docco}
-            className="text-sm overflow-y-auto max-h-[calc(100vh-150px)]"
+            className="text-sm overflow-y-auto max-h-[calc(100vh-170px)]"
           >
-            {exportedShader}
+            {optimized ? exportedOptShader : exportedShader}
           </SyntaxHighlighter>
-          <CopyButton exportedShader={exportedShader} />
+          <CopyButton exportedShader={optimized ? exportedOptShader : exportedShader} />
         </div>
       </Modal.Content>
     </Modal>

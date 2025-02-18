@@ -42,6 +42,7 @@ export function compileShader(
 ): {
   vertShader: string;
   fragShader: string;
+  origFragShader: string;
   uniformsToWatch: Record<string, { value: unknown }>;
 } {
   const nodeLookup = new Map<string, ShaderNode>();
@@ -60,6 +61,7 @@ export function compileShader(
     return {
       vertShader: DEFAULT_VERTEX_SHADER,
       fragShader: DEFAULT_FRAGMENT_SHADER,
+      origFragShader: DEFAULT_FRAGMENT_SHADER,
       uniformsToWatch: {},
     };
 
@@ -201,8 +203,8 @@ ${mainBody}}`;
   // Will return null if function is not loaded yet
   const optFragShader = window.optimize_glsl(fragShader, 1, false);
 
-  console.log(optFragShader);
-  console.log(fragShader);
+  // console.log(optFragShader);
+  // console.log(fragShader);
 
   // The optimizer seems to have a habit of breaking for no reason,
   // so we safeguard against this case.
@@ -227,6 +229,7 @@ ${optFragShader}`);
   return {
     vertShader: DEFAULT_VERTEX_SHADER,
     fragShader: fragShaderToUse,
+    origFragShader: fragShader,
     uniformsToWatch,
   };
 }
